@@ -2,7 +2,7 @@
 
 # 🔐 Security Research Portfolio
 
-### Alireza Kamani — Penetration Tester · SOC Analyst · Security Engineer
+### AK — Penetration Tester · SOC Analyst · Security Engineer
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-alireza--kamani-0A66C2?style=flat&logo=linkedin)](https://linkedin.com/in/alireza-kamani)
 [![Email](https://img.shields.io/badge/Email-alex123kamany%40gmail.com-D14836?style=flat&logo=gmail)](mailto:alex123kamany@gmail.com)
@@ -175,10 +175,10 @@ See [LEGAL_DISCLAIMER.md](./LEGAL_DISCLAIMER.md) for full details.
 I am currently based in Turkey and **open to full international relocation**.
 
 - 📧 **Email:** alex123kamany@gmail.com
-- 💼 **LinkedIn:** [linkedin.com/in/alireza-kamani](https://linkedin.com/in/alireza-kamani)
+- 💼 **LinkedIn:** [linkedin.com/in/ak-365a24188/](https://www.linkedin.com/in/ak-365a24188/)
 - 📱 **Phone:** +90 553 518 37 43
 
-> *Preferred roles: Penetration Tester · Red Team Analyst · Security Engineer · SOC Analyst (Tier 2/3)*  
+> *Preferred roles: Penetration Tester · Red Team Analyst · Security Engineer · SOC Analyst (Tier 1)*  
 > *Languages: Persian (Native) · English C1 (IELTS 7.0) · German A2*
 
 ---
