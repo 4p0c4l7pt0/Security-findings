@@ -158,7 +158,7 @@ BloodHound · Impacket · Wireshark · ELK Stack · IDA Pro · Covenant · Snort
 
 ## ⚖️ Legal Notice
 
-All security assessments documented in this portfolio were conducted under formal written agreements between Sadra Secure Corp. (کیان امن صدرا) and the respective clients.
+All security assessments documented in this portfolio were conducted under formal written agreements and the respective clients.
 
 - NDA periods have elapsed for all engagements
 - Explicit written permission to publish has been obtained from all clients
