@@ -4,7 +4,7 @@
 
 ### AK — Penetration Tester · SOC Analyst · Security Engineer
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-alireza--kamani-0A66C2?style=flat&logo=linkedin)](https://linkedin.com/in/alireza-kamani)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-alireza--kamani-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/ak-365a24188/)
 [![Email](https://img.shields.io/badge/Email-alex123kamany%40gmail.com-D14836?style=flat&logo=gmail)](mailto:alex123kamany@gmail.com)
 [![PortSwigger](https://img.shields.io/badge/PortSwigger_Academy-100%25_Complete-FF6633?style=flat)](https://portswigger.net)
 [![OSCP](https://img.shields.io/badge/OSCP-Pursuing_2025%2F26-4CAF50?style=flat)](https://www.offensive-security.com/pwk-oscp/)
@@ -13,6 +13,7 @@
 ---
 
 *Real-world penetration test findings, CIS hardening audits, and proof-of-concept research from production security engagements. All work conducted under formal signed agreements. Published with explicit client permission after NDA expiry.*
+/*_all the reports with their corresponding findings and POCs can be found on the Reports repository as HTML formats_ /*
 
 </div>
 
