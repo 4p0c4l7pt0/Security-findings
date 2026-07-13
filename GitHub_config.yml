@@ -1,0 +1,27 @@
+title: "Alireza Kamani — Security Research Portfolio"
+description: "Penetration test reports, CIS hardening audits, and security research from real-world engagements."
+author: "Alireza Kamani"
+email: "alex123kamany@gmail.com"
+url: "https://alireza-kamani.github.io"
+baseurl: "/security-research-portfolio"
+
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# SEO
+twitter:
+  username: ""
+social:
+  name: Alireza Kamani
+  links:
+    - https://linkedin.com/in/alireza-kamani
+    - https://github.com/alireza-kamani
+
+# Exclude non-public files
+exclude:
+  - "*.py"
+  - Gemfile
+  - Gemfile.lock
