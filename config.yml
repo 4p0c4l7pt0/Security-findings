@@ -1,8 +1,7 @@
-title: "Alireza Kamani — Security Research Portfolio"
+title: "AK — Security Research Portfolio"
 description: "Penetration test reports, CIS hardening audits, and security research from real-world engagements."
-author: "Alireza Kamani"
+author: "AK"
 email: "alex123kamany@gmail.com"
-url: "https://alireza-kamani.github.io"
 baseurl: "/security-research-portfolio"
 
 theme: minima
@@ -15,10 +14,10 @@ plugins:
 twitter:
   username: ""
 social:
-  name: Alireza Kamani
+  name: AK
   links:
-    - https://linkedin.com/in/alireza-kamani
-    - https://github.com/alireza-kamani
+    - https://www.linkedin.com/in/ak-365a24188/
+    - https://github.com/4p0c4l7pt0
 
 # Exclude non-public files
 exclude:
