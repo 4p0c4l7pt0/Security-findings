@@ -7,7 +7,7 @@ If you have discovered a security vulnerability in any system and need guidance 
 If you believe any content in **this repository** could facilitate harm or contains information that should be removed, please contact me directly — I will respond within 48 hours.
 
 **Contact:** alex123kamany@gmail.com  
-**LinkedIn:** https://linkedin.com/in/alireza-kamani
+**LinkedIn:** https://www.linkedin.com/in/ak-365a24188/
 
 ## My Responsible Disclosure Philosophy
 
