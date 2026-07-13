@@ -13,7 +13,7 @@
 ---
 
 *Real-world penetration test findings, CIS hardening audits, and proof-of-concept research from production security engagements. All work conducted under formal signed agreements. Published with explicit client permission after NDA expiry.*
-\n\r*_all the reports with their corresponding findings and POCs can be found on the Reports repository as HTML formats_*
+/r/n*_all the reports with their corresponding findings and POCs can be found on the Reports repository as HTML formats_*
 
 </div>
 
