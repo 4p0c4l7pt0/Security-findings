@@ -4,7 +4,7 @@
 
 All penetration test reports, security assessments, and vulnerability findings published in this repository were:
 
-1. **Conducted under formal written agreements** between Sadra Secure Corp. (کیان امن صدرا) and the respective client organisations.
+1. **Conducted under formal written agreements** between myself and the respective client organisations.
 2. **Authorised in scope** — all testing was performed exclusively within the agreed target systems and time windows.
 3. **Post-NDA publication** — the non-disclosure period has elapsed for every engagement documented here. Written client permission for publication was obtained prior to any public release.
 4. **Anonymised where required** — any real user PII, production credentials, internal infrastructure details, or data that could harm individuals or systems has been removed or redacted.
