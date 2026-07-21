@@ -1,0 +1,26 @@
+title: "AK — Security Research Portfolio"
+description: "Penetration test reports, CIS hardening audits, and security research from real-world engagements."
+author: "AK"
+email: "alex123kamany@gmail.com"
+baseurl: "/security-research-portfolio"
+
+theme: minima
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# SEO
+twitter:
+  username: ""
+social:
+  name: AK
+  links:
+    - https://www.linkedin.com/in/ak-365a24188/
+    - https://github.com/4p0c4l7pt0
+
+# Exclude non-public files
+exclude:
+  - "*.py"
+  - Gemfile
+  - Gemfile.lock

