@@ -1,210 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Critical Flight — HTB Hardware CTF Writeup</title>
-<meta name="description" content="Writeup for the HackTheBox hardware CTF 'Critical Flight' — recovering a flag split across multiple silkscreen layers of a PCB from raw Gerber files.">
-<link rel="stylesheet" href="../../ctf-theme.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF Writeups — Hardware Track | AK Security-findings</title>
+    <style>
+        /* --- 全局重置 & 字体 --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.10);
+            padding: 2.5rem 2.8rem;
+        }
+
+        /* --- 顶栏 (品牌标识 + 导航) --- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid #e9edf4;
+            margin-bottom: 2rem;
+        }
+
+        .brand {
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: -0.3px;
+            color: #0f172a;
+        }
+
+        .brand span {
+            color: #3b82f6;
+        }
+
+        .top-links {
+            display: flex;
+            gap: 1.8rem;
+            font-size: 0.95rem;
+        }
+
+        .top-links a {
+            text-decoration: none;
+            color: #475569;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .top-links a:hover {
+            color: #1e293b;
+        }
+
+        .top-links a:first-child {
+            background: #f1f5f9;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+            color: #0f172a;
+        }
+
+        /* --- 主标题区 --- */
+        .page-title {
+            margin-bottom: 0.4rem;
+        }
+
+        .page-title h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0f172a;
+        }
+
+        .page-title .subhead {
+            font-size: 1rem;
+            color: #64748b;
+            margin-top: 0.2rem;
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            background: #f8fafc;
+            border-radius: 0 8px 8px 0;
+            padding: 0.6rem 1rem;
+        }
+
+        /* --- 摘要卡片 (类似旧报告中的 summary 块) --- */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1.2rem;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.6rem 1.8rem;
+            margin: 1.8rem 0 2.2rem 0;
+            border: 1px solid #eef2f6;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-item .number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .summary-item .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .summary-item .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e4f8a;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.1rem 0.6rem;
+            border-radius: 30px;
+            margin-top: 0.2rem;
+        }
+
+        /* --- 内容卡片 (两个 writeup) --- */
+        .writeup-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .writeup-card {
+            border: 1px solid #e9edf4;
+            border-radius: 16px;
+            padding: 1.6rem 2rem;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            background: #ffffff;
+        }
+
+        .writeup-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.06);
+        }
+
+        .writeup-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .writeup-header .title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+        }
+
+        .writeup-header .title a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.15s;
+        }
+
+        .writeup-header .title a:hover {
+            border-bottom-color: #3b82f6;
+        }
+
+        .writeup-header .tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 0.15rem 0.7rem;
+            border-radius: 40px;
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .writeup-header .tag.easy {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .writeup-header .tag.very-easy {
+            background: #e0f2fe;
+            color: #1a4c7a;
+        }
+
+        .writeup-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 1.2rem;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 0.6rem;
+        }
+
+        .writeup-meta .pill {
+            background: #f1f5f9;
+            padding: 0.05rem 0.7rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .writeup-description {
+            color: #334155;
+            font-size: 0.95rem;
+            margin-top: 0.2rem;
+        }
+
+        .writeup-description strong {
+            color: #0f172a;
+        }
+
+        /* --- 页脚 --- */
+        .footer {
+            margin-top: 3rem;
+            padding-top: 1.2rem;
+            border-top: 1px solid #e9edf4;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .footer a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            color: #0f172a;
+        }
+
+        /* --- 响应式微调 --- */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem 1.2rem;
+            }
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .top-links {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+            .page-title h1 {
+                font-size: 1.7rem;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr 1fr;
+                padding: 1.2rem;
+            }
+            .writeup-card {
+                padding: 1.2rem 1.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
 
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">AK<span>/</span>Security-findings</div>
-    <nav class="topnav">
-      <a href="../../../index.html">Portfolio</a>
-      <a href="../index.html">All Writeups</a>
-      <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-  </div>
-</div>
-
-<header class="hero">
-  <div class="wrap">
-    <span class="hero-eyebrow">🛩️ Hardware CTF — PCB Analysis</span>
-    <h1>Critical Flight</h1>
-    <p class="subtitle">
-      A HackTheBox hardware challenge shipping raw <strong>Gerber files</strong> for a
-      flight-controller PCB ("HadesMicro"). The flag is split across two different
-      silkscreen layers and only becomes readable once the right layer combination is
-      toggled on in a Gerber viewer.
-    </p>
-
-    <div class="meta-grid">
-      <div class="meta-cell">
-        <div class="label">Platform</div>
-        <div class="value">HackTheBox</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Category</div>
-        <div class="value">Hardware / PCB</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Difficulty</div>
-        <div class="value">Very Easy</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Tools</div>
-        <div class="value mono">strings · grep · PCBWay Gerber Viewer</div>
-      </div>
-    </div>
-
-    <div class="tags">
-      <span class="tag cat">Gerber / PCB</span>
-      <span class="tag">Silkscreen Steganography</span>
-      <span class="tag">Layer Analysis</span>
-    </div>
-  </div>
-</header>
-
-<main class="content">
-  <div class="wrap">
-
-    <div class="section">
-      <h2 class="sec-title">Overview</h2>
-      <p>
-        The challenge archive unzips into a set of <code>.gbr</code> files — the
-        <strong>Gerber</strong> format, the industry-standard file format PCB
-        manufacturers use to describe each physical layer of a board (copper traces,
-        solder mask, silkscreen text, drill holes, and outline). Each layer of the
-        "HadesMicro" flight-controller board ships as a separate file, e.g.
-        <code>HadesMicro-B_Cu.gbr</code> (bottom copper), <code>HadesMicro-F_Silkscreen.gbr</code>
-        (front/top silkscreen labels), and so on.
-      </p>
-      <div class="figure">
-        <img src="01-file-listing.png" alt="Terminal listing of the HadesMicro Gerber files for top, bottom, and inner copper, mask, paste, and silkscreen layers">
-        <figcaption><span class="fig-tag">Fig. 1</span>The challenge archive contains one <code>.gbr</code> file per PCB layer for the "HadesMicro" flight-controller board.</figcaption>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="sec-title">Step 1 — Checking for a plaintext flag first</h2>
-      <div class="step">
-        <div class="step-num">1</div>
-        <p>
-          Gerber files are plain ASCII text, so before reaching for any PCB tooling it's
-          worth just grepping for the flag format directly. Looping over every file and
-          running <a href="https://linux.die.net/man/1/strings" target="_blank" rel="noopener"><code>strings</code></a>
-          piped into <code>grep "HTB"</code> checks each one for a printable
-          <code>HTB{...}</code> string.
-          <span class="fix-note">✓ corrected</span>
-        </p>
-        <pre><code><span class="cmt">$</span> <span class="kw">for</span> file <span class="kw">in</span> *; <span class="kw">do</span> echo <span class="str">"file name : $file"</span>; strings <span class="str">"$file"</span> | grep <span class="str">"HTB"</span>; <span class="kw">done</span></code></pre>
-        <p>
-          This returned nothing — no file contains a plain <code>HTB{...}</code> string on
-          its own. That rules out the simplest case and confirms the flag is encoded
-          into the board geometry itself (most likely the silkscreen layer, since that's
-          the layer meant to hold human-readable text on a real PCB).
-        </p>
-        <div class="figure">
-          <img src="02-strings-grep.png" alt="Terminal running a for loop with strings and grep HTB across all Gerber files, returning no matches">
-          <figcaption><span class="fig-tag">Fig. 2</span><code>strings</code> + <code>grep "HTB"</code> across every Gerber file — no plaintext flag present, so it must be embedded in the rendered board layout.</figcaption>
+        <!-- ===== 顶栏 ===== -->
+        <div class="top-bar">
+            <div class="brand">AK/<span>Security-findings</span></div>
+            <div class="top-links">
+                <a href="#">Portfolio</a>
+                <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank">GitHub</a>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 2 — Rendering the board</h2>
-      <div class="step">
-        <div class="step-num">2</div>
-        <p>
-          Gerber files need to be rendered to actually see what they draw. Without local
-          PCB CAD tools installed, <a href="https://www.pcbway.com/project/OnlineGerberViewer.html" target="_blank" rel="noopener">PCBWay's free Online Gerber Viewer</a>
-          works well for this — upload all the <code>.gbr</code> files and it reconstructs
-          the board with a per-layer toggle panel (top/bottom copper, soldermask,
-          silkscreen, solderpaste, inner copper layers, and mechanical drill/outline
-          layers).
-        </p>
-        <div class="figure">
-          <img src="03-gerber-view.png" alt="PCBWay Online Gerber Viewer showing the fully assembled HadesMicro flight controller board with all layers visible">
-          <figcaption><span class="fig-tag">Fig. 3</span>All Gerber layers assembled in PCBWay's viewer — the HadesMicro flight-controller board, fully populated with its components silkscreened.</figcaption>
+        <!-- ===== 主标题 ===== -->
+        <div class="page-title">
+            <h1>CTF Writeups</h1>
+            <div class="subhead">Hardware Track — short writeups from HackTheBox hardware-track challenges</div>
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 3 — First half of the flag on the bottom copper layer</h2>
-      <div class="step">
-        <div class="step-num">3</div>
-        <p>
-          Since it's a low-difficulty challenge, the natural approach is to isolate
-          layers one at a time rather than viewing the fully composited board. Toggling
-          on <em>only</em> the bottom copper layer reveals text traced directly into the
-          copper along the left edge of the board:
-        </p>
-        <div class="flag-box" style="font-size: 14px;">
-          <span class="flag-label">Partial</span>
-          HTB{533_7h3_1nn32_w02k1n95_
+        <!-- ===== 摘要卡片 (类似旧报告的 summary 块) ===== -->
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="number">2</div>
+                <div class="label">Challenges</div>
+                <div class="badge">Hardware</div>
+            </div>
+            <div class="summary-item">
+                <div class="number">1</div>
+                <div class="label">Easy</div>
+                <div class="badge">VHDL</div>
+            </div>
+            <div class="summary-item">
+                <div class="number">1</div>
+                <div class="label">Very Easy</div>
+                <div class="badge">PCB / Gerber</div>
+            </div>
         </div>
-        <p style="margin-top: 14px;">
-          Submitting this alone as a flag doesn't work — it's cut off mid-string, which
-          is the signal that more of it is hiding on another layer.
-        </p>
-        <div class="figure">
-          <img src="04-bottom-copper-flag-part1.jpeg" alt="Bottom copper layer of the PCB showing HTB{533_7h3_1nn32_w02k1n95_ traced into the copper along the board edge">
-          <figcaption><span class="fig-tag">Fig. 4</span>Bottom copper layer isolated — the first half of the flag is etched directly into the trace.</figcaption>
+
+        <!-- ===== 两个 Writeup 卡片 ===== -->
+        <div class="writeup-grid">
+
+            <!-- 卡片 1: Hardware, It's Oops PM -->
+            <div class="writeup-card">
+                <div class="writeup-header">
+                    <span class="title">
+                        <a href="#">Hardware, It's Oops PM</a>
+                    </span>
+                    <span class="tag easy">Easy</span>
+                    <span class="tag" style="background:#f1f5f9;color:#334155;">Reversing</span>
+                </div>
+                <div class="writeup-meta">
+                    <span>HackTheBox · Hardware / Reversing</span>
+                    <span class="pill">VHDL</span>
+                </div>
+                <div class="writeup-description">
+                    Reversing a small VHDL “TPM” design to find a hardcoded 16-bit backdoor pattern that bypasses the encryption block entirely.
+                    <br /><strong>VHDL TPM Hardcoded Backdoor</strong>
+                </div>
+            </div>
+
+            <!-- 卡片 2: Critical Flight -->
+            <div class="writeup-card">
+                <div class="writeup-header">
+                    <span class="title">
+                        <a href="#">Critical Flight</a>
+                    </span>
+                    <span class="tag very-easy">Very Easy</span>
+                    <span class="tag" style="background:#f1f5f9;color:#334155;">PCB</span>
+                </div>
+                <div class="writeup-meta">
+                    <span>HackTheBox · Hardware / PCB</span>
+                    <span class="pill">Gerber</span>
+                </div>
+                <div class="writeup-description">
+                    Recovering a flag split across the bottom-copper and inner layers of a flight-controller PCB from raw Gerber files.
+                    <br /><strong>Gerber / PCB Silkscreen Steganography</strong>
+                </div>
+            </div>
+
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 4 — Second half on the inner layers</h2>
-      <div class="step">
-        <div class="step-num">4</div>
-        <p>
-          Enabling additional layers — bottom soldermask, bottom silkscreen, and both
-          inner copper layers (<code>In1_Cu</code> / <code>In2_Cu</code>) — reveals the
-          rest of the string near the center of the board, previously hidden underneath
-          the components on top:
-        </p>
-        <div class="flag-box" style="font-size: 14px;">
-          <span class="flag-label">Partial</span>
-          _0f_313c720n1c5#$@}
+        <!-- ===== 页脚 ===== -->
+        <div class="footer">
+            <span>AK · Published for portfolio purposes</span>
+            <span>
+                <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank">GitHub</a>
+            </span>
         </div>
-        <div class="figure">
-          <img src="05-inner-layers-flag-part2.jpeg" alt="Inner copper and silkscreen layers enabled, revealing the second half of the flag: _0f_313c720n1c5#$@}">
-          <figcaption><span class="fig-tag">Fig. 5</span>With inner copper and bottom silkscreen/soldermask layers also enabled, the second half of the flag appears near the board's center.</figcaption>
-        </div>
-        <p>
-          Concatenating both fragments (the shared underscore lines up between them)
-          gives the complete flag.
-        </p>
-      </div>
+
     </div>
-
-    <div class="section">
-      <h2 class="sec-title">Flag</h2>
-      <div class="flag-box">
-        <span class="flag-label">Flag</span>
-        HTB{533_7h3_1nn32_w02k1n95_0f_313c720n1c5#$@}
-      </div>
-      <p style="margin-top: 10px; color: var(--text-dim); font-size: 13.5px;">
-        Leetspeak for: <em>"see the inner workings of electronics"</em> — a fitting hint
-        that the answer was always in the layers underneath.
-      </p>
-    </div>
-
-    <div class="section">
-      <h2 class="sec-title">Takeaways</h2>
-      <ul class="clean">
-        <li><strong>Gerber (.gbr)</strong> files are the standard format for describing individual physical layers of a PCB — not a general-purpose CAD format, and not the same thing as a schematic.</li>
-        <li>Always check for a plaintext flag first (<code>strings</code> + <code>grep</code>) before reaching for rendering tools — it's a five-second check that rules out the trivial case.</li>
-        <li>PCB silkscreen and copper layers can be used to hide data in plain sight; a fully composited render can visually bury text that's only obvious once you isolate individual layers.</li>
-        <li>Free online Gerber viewers are a perfectly viable substitute for full PCB CAD software when you just need to inspect layers, not fabricate a board.</li>
-      </ul>
-    </div>
-
-  </div>
-</main>
-
-<footer class="site-footer">
-  <div class="wrap">
-    Writeup by AK — published for portfolio purposes ·
-    <a href="../index.html">More CTF writeups</a> ·
-    <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
-  </div>
-</footer>
-
 </body>
 </html>
