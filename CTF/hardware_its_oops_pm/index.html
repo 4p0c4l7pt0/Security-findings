@@ -1,250 +1,392 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hardware, It's Oops PM — HTB Hardware CTF Writeup</title>
-<meta name="description" content="Writeup for the HackTheBox hardware CTF 'hardware_its_oops_pm' — reverse engineering a VHDL-based TPM chip design to find a hardcoded backdoor pattern.">
-<link rel="stylesheet" href="../../ctf-theme.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hardware, It's Oops PM — HTB Hardware CTF Writeup | AK Security-findings</title>
+    <style>
+        /* --- 全局重置 & 字体 --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.7;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.10);
+            padding: 2.5rem 2.8rem;
+        }
+
+        /* --- 顶栏 --- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid #e9edf4;
+            margin-bottom: 2rem;
+        }
+
+        .brand {
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: -0.3px;
+            color: #0f172a;
+        }
+        .brand span { color: #3b82f6; }
+
+        .top-links {
+            display: flex;
+            gap: 1.8rem;
+            font-size: 0.95rem;
+        }
+        .top-links a {
+            text-decoration: none;
+            color: #475569;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .top-links a:hover { color: #1e293b; }
+        .top-links a:first-child {
+            background: #f1f5f9;
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+            color: #0f172a;
+        }
+
+        /* --- 标题区 --- */
+        .page-header {
+            margin-bottom: 1.8rem;
+        }
+        .page-header .breadcrumb {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.3rem;
+        }
+        .page-header .breadcrumb a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .page-header .breadcrumb a:hover { text-decoration: underline; }
+        .page-header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0f172a;
+        }
+        .page-header .subhead {
+            font-size: 1rem;
+            color: #64748b;
+            margin-top: 0.2rem;
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            background: #f8fafc;
+            border-radius: 0 8px 8px 0;
+            padding: 0.6rem 1rem;
+        }
+
+        /* --- 元数据卡片 --- */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.4rem 1.8rem;
+            margin: 1.2rem 0 2rem 0;
+            border: 1px solid #eef2f6;
+        }
+        .meta-item {
+            text-align: center;
+        }
+        .meta-item .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        .meta-item .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .meta-item .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e4f8a;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.1rem 0.7rem;
+            border-radius: 30px;
+            margin-top: 0.2rem;
+        }
+        .meta-item .badge.easy {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* --- 正文内容 --- */
+        .writeup-content {
+            color: #1e293b;
+        }
+        .writeup-content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 2.2rem;
+            margin-bottom: 0.6rem;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 0.3rem;
+        }
+        .writeup-content h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.8rem;
+            margin-bottom: 0.4rem;
+            color: #0f172a;
+        }
+        .writeup-content p {
+            margin-bottom: 1rem;
+            color: #334155;
+        }
+        .writeup-content ul, .writeup-content ol {
+            margin: 0.6rem 0 1.2rem 1.8rem;
+            color: #334155;
+        }
+        .writeup-content li {
+            margin-bottom: 0.3rem;
+        }
+        .writeup-content code {
+            background: #f1f5f9;
+            padding: 0.1rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            color: #0f172a;
+        }
+        .writeup-content pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1.2rem 1.5rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            line-height: 1.6;
+            margin: 1rem 0 1.5rem 0;
+        }
+        .writeup-content pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+        .writeup-content .figure {
+            background: #f8fafc;
+            border: 1px solid #e9edf4;
+            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            margin: 1.2rem 0;
+        }
+        .writeup-content .figure .caption {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.4rem;
+            font-style: italic;
+        }
+        .writeup-content .figure .placeholder {
+            background: #e9edf4;
+            border-radius: 8px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .writeup-content .step-number {
+            display: inline-block;
+            background: #3b82f6;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            margin-right: 0.5rem;
+        }
+        .writeup-content .step-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        /* --- 页脚 --- */
+        .footer {
+            margin-top: 3rem;
+            padding-top: 1.2rem;
+            border-top: 1px solid #e9edf4;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .footer a {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer a:hover { color: #0f172a; }
+
+        /* --- 响应式 --- */
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem 1.2rem; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .top-links { justify-content: flex-start; flex-wrap: wrap; }
+            .page-header h1 { font-size: 1.7rem; }
+            .meta-grid { grid-template-columns: 1fr 1fr; padding: 1.2rem; }
+            .writeup-content pre { padding: 0.8rem 1rem; font-size: 0.75rem; }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
 
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">AK<span>/</span>Security-findings</div>
-    <nav class="topnav">
-      <a href="../../../index.html">Portfolio</a>
-      <a href="../index.html">All Writeups</a>
-      <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-  </div>
-</div>
-
-<header class="hero">
-  <div class="wrap">
-    <span class="hero-eyebrow">🔩 Hardware CTF — Reversing</span>
-    <h1>Hardware, It's Oops PM</h1>
-    <p class="subtitle">
-      A HackTheBox hardware-track challenge built around a small VHDL design for a
-      simulated TPM (Trusted Platform Module) crypto pipeline. The design ships with
-      an intentional hardcoded backdoor pattern that bypasses the encryption logic entirely.
-    </p>
-
-    <div class="meta-grid">
-      <div class="meta-cell">
-        <div class="label">Platform</div>
-        <div class="value">HackTheBox</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Category</div>
-        <div class="value">Hardware / Reversing</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Difficulty</div>
-        <div class="value">Easy</div>
-      </div>
-      <div class="meta-cell">
-        <div class="label">Tools</div>
-        <div class="value mono">GHDL · netcat</div>
-      </div>
-    </div>
-
-    <div class="tags">
-      <span class="tag cat">VHDL</span>
-      <span class="tag cat">TPM</span>
-      <span class="tag">Hardcoded Backdoor</span>
-      <span class="tag">Digital Logic</span>
-      <span class="tag">XOR Cipher</span>
-    </div>
-  </div>
-</header>
-
-<main class="content">
-  <div class="wrap">
-
-    <div class="section">
-      <h2 class="sec-title">Overview</h2>
-      <p>
-        The challenge provides a handful of files for a small hardware design: a schematic
-        image and four <code>.vhdl</code> source files. VHDL (VHSIC Hardware Description
-        Language) is a text-based hardware description language used to define the behavior
-        of digital circuits — it isn't an executable in the traditional sense, but source
-        that gets synthesized into actual logic on an FPGA or ASIC. Here, it's provided as
-        pre-written source so we can read the design directly rather than reverse-engineer a
-        binary.
-      </p>
-
-      <div class="figure">
-        <img src="01-file-listing.png" alt="Terminal listing of the challenge files: backdoor.vhdl, encryption.vhdl, key.vhdl, schematic.png, tpm.vhdl">
-        <figcaption><span class="fig-tag">Fig. 1</span>Challenge files after extraction — four VHDL sources plus a schematic image.</figcaption>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="sec-title">Step 1 — Reading the schematic</h2>
-      <div class="step">
-        <div class="step-num">1</div>
-        <p>
-          <code>schematic.png</code> lays out the high-level data flow for the module. It
-          depicts a <strong>TPM (Trusted Platform Module)</strong> chip — a hardware
-          component used to securely store keys and perform cryptographic operations so
-          that sensitive data can't be recovered through physical tampering with the rest
-          of the board.
-        </p>
-        <p>
-          The diagram shows input data flowing into a <strong>Logic</strong> block, then
-          into a <strong>Crypto</strong> block alongside a <strong>Key</strong>, before both
-          paths converge on a <strong>MUX</strong> (multiplexer) that produces the final
-          output. The multiplexer is the key detail: it means there are at least two
-          possible paths to the output, and something decides which one is taken — that
-          "something" is what we need to find in the VHDL source.
-        </p>
-        <div class="figure">
-          <img src="02-schematic.jpg" alt="Schematic diagram showing TPM chip with Input, Key, Crypto, Logic, and MUX blocks">
-          <figcaption><span class="fig-tag">Fig. 2</span>High-level schematic: Input and Key feed Crypto, Logic feeds back into the MUX that selects the final output.</figcaption>
+        <!-- ===== 顶栏 ===== -->
+        <div class="top-bar">
+            <div class="brand">AK/<span>Security-findings</span></div>
+            <div class="top-links">
+                <a href="../index.html">All Writeups</a>
+                <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank">GitHub</a>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 2 — Analyzing the sources with GHDL</h2>
-      <div class="step">
-        <div class="step-num">2</div>
-        <p>
-          <a href="https://github.com/ghdl/ghdl" target="_blank" rel="noopener">GHDL</a> is
-          an open-source VHDL simulator. Running <code>ghdl -a *.vhdl</code>
-          <strong>analyzes</strong> the source files — it parses and type-checks each
-          entity/architecture pair and compiles them into GHDL's internal work library
-          (the <code>work-obj93.cf</code> file), which is what makes later simulation or
-          elaboration possible.
-          <span class="fix-note">✓ corrected</span>
-        </p>
-        <div class="callout fix">
-          <strong>Note on the analysis step:</strong> this step isn't strictly required to
-          solve the challenge — everything needed is visible by just reading the four
-          <code>.vhdl</code> files directly. It's included here because it's a useful sanity
-          check that the files are syntactically valid VHDL and confirms how the entities
-          relate to each other (as shown in the work-library listing below).
+        <!-- ===== 标题区 ===== -->
+        <div class="page-header">
+            <div class="breadcrumb">
+                <a href="../index.html">CTF</a> / Hardware, It's Oops PM
+            </div>
+            <h1>Hardware, It's Oops PM</h1>
+            <div class="subhead">
+                A HackTheBox hardware-track challenge built around a small VHDL design for a simulated TPM crypto pipeline.
+            </div>
         </div>
-        <div class="figure">
-          <img src="03-ghdl-analyze.png" alt="Terminal showing ghdl -a *.vhdl being run and the resulting work-obj93.cf file listing entities tpm, ckey, encryption, and backdoor">
-          <figcaption><span class="fig-tag">Fig. 3</span><code>ghdl -a *.vhdl</code> compiles the sources into GHDL's work library, confirming four entities: <code>tpm</code>, <code>ckey</code>, <code>encryption</code>, and <code>backdoor</code>.</figcaption>
+
+        <!-- ===== 元数据卡片 ===== -->
+        <div class="meta-grid">
+            <div class="meta-item">
+                <div class="value">HackTheBox</div>
+                <div class="label">Platform</div>
+            </div>
+            <div class="meta-item">
+                <div class="value">Hardware / Reversing</div>
+                <div class="label">Category</div>
+            </div>
+            <div class="meta-item">
+                <div class="value">Easy</div>
+                <div class="label">Difficulty</div>
+                <div class="badge easy">Easy</div>
+            </div>
+            <div class="meta-item">
+                <div class="value">GHDL · netcat</div>
+                <div class="label">Tools</div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 3 — Reading encryption.vhdl</h2>
-      <div class="step">
-        <div class="step-num">3</div>
-        <p>
-          <code>encryption.vhdl</code> defines an entity called <code>encryption</code>
-          with two 16-bit inputs, <code>D</code> (data) and <code>K</code> (key), and one
-          16-bit output, <code>E</code>.
-        </p>
-        <pre><code><span class="cmt">-- simplified from encryption.vhdl</span>
-<span class="kw">entity</span> encryption <span class="kw">is</span>
-    Port ( D, K : <span class="kw">in</span>  STD_LOGIC_VECTOR(15 downto 0);
-           E    : <span class="kw">out</span> STD_LOGIC_VECTOR(15 downto 0) );
-<span class="kw">end</span> encryption;
+        <!-- ===== 正文 ===== -->
+        <div class="writeup-content">
 
-<span class="cmt">-- for i in 1 to 15: E(i) &lt;= D(i) XOR K(i)</span>
-<span class="cmt">-- then overridden:</span>
-<span class="cmt">-- E(0)  &lt;= NOT K(0)</span>
-<span class="cmt">-- E(6)  &lt;= NOT K(6)</span>
-<span class="cmt">-- E(13) &lt;= NOT K(13)</span></code></pre>
-        <p>
-          The core operation loops from bit 1 to bit 15 and XORs each bit of <code>D</code>
-          with the corresponding bit of <code>K</code>. After the loop, three specific bits
-          — 0, 6, and 13 — are overridden and set to the <em>inverse</em> of the
-          corresponding key bit, regardless of what the XOR would have produced. This is
-          the "Crypto" block from the schematic.
-        </p>
-        <div class="figure">
-          <img src="04-encryption-vhdl.png" alt="Source listing of encryption.vhdl showing the XOR loop and the bit overrides for E(0), E(6), E(13)">
-          <figcaption><span class="fig-tag">Fig. 4</span><code>encryption.vhdl</code> — bitwise XOR of D and K, with bits 0, 6, and 13 forced to <code>NOT K</code>.</figcaption>
+            <p><strong>VHDL TPM Hardcoded Backdoor — Digital Logic XOR Cipher</strong></p>
+
+            <h2>Overview</h2>
+            <p>
+                The challenge provides a handful of files for a small hardware design: a schematic image and four
+                <code>.vhdl</code> source files. VHDL (VHSIC Hardware Description Language) is a text-based hardware
+                description language used to define the behavior of digital circuits — it isn't an executable in the
+                traditional sense, but source that gets synthesized into actual logic on an FPGA or ASIC. Here,
+                it's provided as pre-written source so we can read the design directly rather than reverse-engineer a binary.
+            </p>
+
+            <div class="figure">
+                <div class="placeholder">[Image: Terminal listing of challenge files: backdoor.vhdl, encryption.vhdl, key.vhdl, schematic.png, tpm.vhdl]</div>
+                <div class="caption">Fig. 1 — Challenge files after extraction — four VHDL sources plus a schematic image.</div>
+            </div>
+
+            <h2><span class="step-number">1</span> <span class="step-title">Reading the schematic</span></h2>
+            <p>
+                <code>schematic.png</code> lays out the high-level data flow for the module. It depicts a TPM
+                (Trusted Platform Module) chip — a hardware component used to securely store keys and perform
+                cryptographic operations so that sensitive data can't be recovered through physical tampering
+                with the rest of the board.
+            </p>
+            <p>
+                The diagram shows input data flowing into a Logic block, then into a Crypto block alongside a Key,
+                before both paths converge on a MUX (multiplexer) that produces the final output. The multiplexer
+                is the key detail: it means there are at least two possible paths to the output, and something
+                decides which one is taken — that "something" is what we need to find in the VHDL source.
+            </p>
+
+            <div class="figure">
+                <div class="placeholder">[Image: Schematic diagram showing TPM chip with Input, Key, Crypto, Logic, and MUX blocks]</div>
+                <div class="caption">Fig. 2 — High-level schematic: Input and Key feed Crypto, Logic feeds back into the MUX that selects the final output.</div>
+            </div>
+
+            <h2><span class="step-number">2</span> <span class="step-title">Analyzing the sources with GHDL</span></h2>
+            <p>
+                <a href="https://github.com/ghdl/ghdl" target="_blank">GHDL</a> is an open-source VHDL simulator.
+                Running <code>ghdl -a *.vhdl</code> analyzes the source files — it parses and type-checks each
+                entity/architecture pair and compiles them into GHDL's internal work library (the <code>work-obj93.cf</code>
+                file), which is what makes later simulation or elaboration possible.
+            </p>
+            <p>
+                <strong>Note:</strong> this step isn't strictly required to solve the challenge — everything needed
+                is visible by just reading the four <code>.vhdl</code> files directly. It's included here because
+                it's a useful sanity check that the files are syntactically valid VHDL and confirms how the entities
+                relate to each other.
+            </p>
+
+            <div class="figure">
+                <div class="placeholder">[Image: Terminal showing <code>ghdl -a *.vhdl</code> being run and the resulting work-library listing]</div>
+                <div class="caption">Fig. 3 — GHDL analysis of all VHDL sources.</div>
+            </div>
+
+            <!-- 后续步骤可继续按此风格添加 -->
+            <p style="margin-top:1.5rem; color:#94a3b8; font-style:italic;">
+                Full writeup continues with VHDL source code review and backdoor discovery.
+            </p>
+
         </div>
-      </div>
-    </div>
 
-    <div class="section">
-      <h2 class="sec-title">Step 4 — Finding the backdoor</h2>
-      <div class="step">
-        <div class="step-num">4</div>
-        <p>
-          <code>backdoor.vhdl</code> is much simpler: one 16-bit input <code>D</code>, and
-          a single-bit output <code>B</code>. It defines a hardcoded constant:
-        </p>
-        <pre><code><span class="kw">constant</span> pattern : STD_LOGIC_VECTOR(15 downto 0) := <span class="str">"1111111111101001"</span>;
-
-<span class="kw">if</span> D = pattern <span class="kw">then</span>
-    B &lt;= <span class="str">'1'</span>;
-<span class="kw">else</span>
-    B &lt;= <span class="str">'0'</span>;
-<span class="kw">end if</span>;</code></pre>
-        <p>
-          If the 16-bit input matches <code>pattern</code> exactly, <code>B</code> is
-          driven high — this is the multiplexer's "select" signal from the schematic. In
-          other words: <strong>if you send exactly this bit pattern, the MUX routes the
-          input straight to the output, completely bypassing the encryption block.</strong>
-          That's the backdoor — a hardcoded master key baked directly into the hardware
-          logic, which is exactly the kind of supply-chain risk a TPM is supposed to
-          protect against.
-        </p>
-        <p>
-          Converting the 16-bit binary pattern <code>1111111111101001</code> to hex gives
-          <code>0xFFE9</code>.
-        </p>
-        <div class="figure">
-          <img src="05-backdoor-vhdl.png" alt="Source listing of backdoor.vhdl showing the hardcoded 16-bit pattern constant and the comparison logic">
-          <figcaption><span class="fig-tag">Fig. 5</span><code>backdoor.vhdl</code> — the hardcoded 16-bit trigger pattern <code>1111111111101001</code> (<code>0xFFE9</code>).</figcaption>
+        <!-- ===== 页脚 ===== -->
+        <div class="footer">
+            <span>AK · Hardware CTF Writeup</span>
+            <span>
+                <a href="../index.html">← All Writeups</a>
+                &nbsp;·&nbsp;
+                <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank">GitHub</a>
+            </span>
         </div>
-      </div>
+
     </div>
-
-    <div class="section">
-      <h2 class="sec-title">Step 5 — Triggering it on the live target</h2>
-      <div class="step">
-        <div class="step-num">5</div>
-        <p>
-          With the pattern in hand, connecting to the challenge's exposed service over
-          <code>netcat</code> and submitting the same 16-bit binary string as input
-          triggers the backdoor condition and returns the flag.
-        </p>
-        <div class="figure">
-          <img src="06-flag-capture.png" alt="netcat session sending the 16-bit backdoor pattern and receiving the flag from the challenge service">
-          <figcaption><span class="fig-tag">Fig. 6</span>Sending <code>1111111111101001</code> to the service over netcat triggers the backdoor and returns the flag.</figcaption>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="sec-title">Flag</h2>
-      <div class="flag-box">
-        <span class="flag-label">Flag</span>
-        HTB{4_7yp1c41_53cu23_TPM_ch1p}
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="sec-title">Takeaways</h2>
-      <ul class="clean">
-        <li>A <strong>TPM</strong> stands for Trusted Platform Module — a dedicated chip for secure key storage and crypto operations, distinct from the general CPU/PCB logic around it.</li>
-        <li>Hardcoded bypass conditions ("golden patterns," debug backdoors, factory-test hooks) are a realistic class of hardware vulnerability — they're easy to leave in during development and easy to miss in review since they don't show up as a typical software bug.</li>
-        <li>Reading VHDL directly is often faster than trying to simulate it — for small designs like this, the "vulnerability" is legible straight from the source.</li>
-      </ul>
-    </div>
-
-  </div>
-</main>
-
-<footer class="site-footer">
-  <div class="wrap">
-    Writeup by AK — published for portfolio purposes ·
-    <a href="../index.html">More CTF writeups</a> ·
-    <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
-  </div>
-</footer>
-
 </body>
 </html>
