@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Critical Flight — HTB Hardware CTF Writeup</title>
+<meta name="description" content="Writeup for the HackTheBox hardware CTF 'Critical Flight' — recovering a flag split across multiple silkscreen layers of a PCB from raw Gerber files.">
+<link rel="stylesheet" href="../../ctf-theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">AK<span>/</span>Security-findings</div>
+    <nav class="topnav">
+      <a href="../../../index.html">Portfolio</a>
+      <a href="../index.html">All Writeups</a>
+      <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">🛩️ Hardware CTF — PCB Analysis</span>
+    <h1>Critical Flight</h1>
+    <p class="subtitle">
+      A HackTheBox hardware challenge shipping raw <strong>Gerber files</strong> for a
+      flight-controller PCB ("HadesMicro"). The flag is split across two different
+      silkscreen layers and only becomes readable once the right layer combination is
+      toggled on in a Gerber viewer.
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <div class="label">Platform</div>
+        <div class="value">HackTheBox</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Category</div>
+        <div class="value">Hardware / PCB</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Difficulty</div>
+        <div class="value">Very Easy</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Tools</div>
+        <div class="value mono">strings · grep · PCBWay Gerber Viewer</div>
+      </div>
+    </div>
+
+    <div class="tags">
+      <span class="tag cat">Gerber / PCB</span>
+      <span class="tag">Silkscreen Steganography</span>
+      <span class="tag">Layer Analysis</span>
+    </div>
+  </div>
+</header>
+
+<main class="content">
+  <div class="wrap">
+
+    <div class="section">
+      <h2 class="sec-title">Overview</h2>
+      <p>
+        The challenge archive unzips into a set of <code>.gbr</code> files — the
+        <strong>Gerber</strong> format, the industry-standard file format PCB
+        manufacturers use to describe each physical layer of a board (copper traces,
+        solder mask, silkscreen text, drill holes, and outline). Each layer of the
+        "HadesMicro" flight-controller board ships as a separate file, e.g.
+        <code>HadesMicro-B_Cu.gbr</code> (bottom copper), <code>HadesMicro-F_Silkscreen.gbr</code>
+        (front/top silkscreen labels), and so on.
+      </p>
+      <div class="figure">
+        <img src="01-file-listing.png" alt="Terminal listing of the HadesMicro Gerber files for top, bottom, and inner copper, mask, paste, and silkscreen layers">
+        <figcaption><span class="fig-tag">Fig. 1</span>The challenge archive contains one <code>.gbr</code> file per PCB layer for the "HadesMicro" flight-controller board.</figcaption>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 1 — Checking for a plaintext flag first</h2>
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>
+          Gerber files are plain ASCII text, so before reaching for any PCB tooling it's
+          worth just grepping for the flag format directly. Looping over every file and
+          running <a href="https://linux.die.net/man/1/strings" target="_blank" rel="noopener"><code>strings</code></a>
+          piped into <code>grep "HTB"</code> checks each one for a printable
+          <code>HTB{...}</code> string.
+          <span class="fix-note">✓ corrected</span>
+        </p>
+        <pre><code><span class="cmt">$</span> <span class="kw">for</span> file <span class="kw">in</span> *; <span class="kw">do</span> echo <span class="str">"file name : $file"</span>; strings <span class="str">"$file"</span> | grep <span class="str">"HTB"</span>; <span class="kw">done</span></code></pre>
+        <p>
+          This returned nothing — no file contains a plain <code>HTB{...}</code> string on
+          its own. That rules out the simplest case and confirms the flag is encoded
+          into the board geometry itself (most likely the silkscreen layer, since that's
+          the layer meant to hold human-readable text on a real PCB).
+        </p>
+        <div class="figure">
+          <img src="02-strings-grep.png" alt="Terminal running a for loop with strings and grep HTB across all Gerber files, returning no matches">
+          <figcaption><span class="fig-tag">Fig. 2</span><code>strings</code> + <code>grep "HTB"</code> across every Gerber file — no plaintext flag present, so it must be embedded in the rendered board layout.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 2 — Rendering the board</h2>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>
+          Gerber files need to be rendered to actually see what they draw. Without local
+          PCB CAD tools installed, <a href="https://www.pcbway.com/project/OnlineGerberViewer.html" target="_blank" rel="noopener">PCBWay's free Online Gerber Viewer</a>
+          works well for this — upload all the <code>.gbr</code> files and it reconstructs
+          the board with a per-layer toggle panel (top/bottom copper, soldermask,
+          silkscreen, solderpaste, inner copper layers, and mechanical drill/outline
+          layers).
+        </p>
+        <div class="figure">
+          <img src="03-gerber-view.png" alt="PCBWay Online Gerber Viewer showing the fully assembled HadesMicro flight controller board with all layers visible">
+          <figcaption><span class="fig-tag">Fig. 3</span>All Gerber layers assembled in PCBWay's viewer — the HadesMicro flight-controller board, fully populated with its components silkscreened.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 3 — First half of the flag on the bottom copper layer</h2>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>
+          Since it's a low-difficulty challenge, the natural approach is to isolate
+          layers one at a time rather than viewing the fully composited board. Toggling
+          on <em>only</em> the bottom copper layer reveals text traced directly into the
+          copper along the left edge of the board:
+        </p>
+        <div class="flag-box" style="font-size: 14px;">
+          <span class="flag-label">Partial</span>
+          HTB{533_7h3_1nn32_w02k1n95_
+        </div>
+        <p style="margin-top: 14px;">
+          Submitting this alone as a flag doesn't work — it's cut off mid-string, which
+          is the signal that more of it is hiding on another layer.
+        </p>
+        <div class="figure">
+          <img src="04-bottom-copper-flag-part1.jpeg" alt="Bottom copper layer of the PCB showing HTB{533_7h3_1nn32_w02k1n95_ traced into the copper along the board edge">
+          <figcaption><span class="fig-tag">Fig. 4</span>Bottom copper layer isolated — the first half of the flag is etched directly into the trace.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 4 — Second half on the inner layers</h2>
+      <div class="step">
+        <div class="step-num">4</div>
+        <p>
+          Enabling additional layers — bottom soldermask, bottom silkscreen, and both
+          inner copper layers (<code>In1_Cu</code> / <code>In2_Cu</code>) — reveals the
+          rest of the string near the center of the board, previously hidden underneath
+          the components on top:
+        </p>
+        <div class="flag-box" style="font-size: 14px;">
+          <span class="flag-label">Partial</span>
+          _0f_313c720n1c5#$@}
+        </div>
+        <div class="figure">
+          <img src="05-inner-layers-flag-part2.jpeg" alt="Inner copper and silkscreen layers enabled, revealing the second half of the flag: _0f_313c720n1c5#$@}">
+          <figcaption><span class="fig-tag">Fig. 5</span>With inner copper and bottom silkscreen/soldermask layers also enabled, the second half of the flag appears near the board's center.</figcaption>
+        </div>
+        <p>
+          Concatenating both fragments (the shared underscore lines up between them)
+          gives the complete flag.
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Flag</h2>
+      <div class="flag-box">
+        <span class="flag-label">Flag</span>
+        HTB{533_7h3_1nn32_w02k1n95_0f_313c720n1c5#$@}
+      </div>
+      <p style="margin-top: 10px; color: var(--text-dim); font-size: 13.5px;">
+        Leetspeak for: <em>"see the inner workings of electronics"</em> — a fitting hint
+        that the answer was always in the layers underneath.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Takeaways</h2>
+      <ul class="clean">
+        <li><strong>Gerber (.gbr)</strong> files are the standard format for describing individual physical layers of a PCB — not a general-purpose CAD format, and not the same thing as a schematic.</li>
+        <li>Always check for a plaintext flag first (<code>strings</code> + <code>grep</code>) before reaching for rendering tools — it's a five-second check that rules out the trivial case.</li>
+        <li>PCB silkscreen and copper layers can be used to hide data in plain sight; a fully composited render can visually bury text that's only obvious once you isolate individual layers.</li>
+        <li>Free online Gerber viewers are a perfectly viable substitute for full PCB CAD software when you just need to inspect layers, not fabricate a board.</li>
+      </ul>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    Writeup by AK — published for portfolio purposes ·
+    <a href="../index.html">More CTF writeups</a> ·
+    <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

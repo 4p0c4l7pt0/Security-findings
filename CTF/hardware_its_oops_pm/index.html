@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hardware, It's Oops PM — HTB Hardware CTF Writeup</title>
+<meta name="description" content="Writeup for the HackTheBox hardware CTF 'hardware_its_oops_pm' — reverse engineering a VHDL-based TPM chip design to find a hardcoded backdoor pattern.">
+<link rel="stylesheet" href="../../ctf-theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">AK<span>/</span>Security-findings</div>
+    <nav class="topnav">
+      <a href="../../../index.html">Portfolio</a>
+      <a href="../index.html">All Writeups</a>
+      <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">🔩 Hardware CTF — Reversing</span>
+    <h1>Hardware, It's Oops PM</h1>
+    <p class="subtitle">
+      A HackTheBox hardware-track challenge built around a small VHDL design for a
+      simulated TPM (Trusted Platform Module) crypto pipeline. The design ships with
+      an intentional hardcoded backdoor pattern that bypasses the encryption logic entirely.
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <div class="label">Platform</div>
+        <div class="value">HackTheBox</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Category</div>
+        <div class="value">Hardware / Reversing</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Difficulty</div>
+        <div class="value">Easy</div>
+      </div>
+      <div class="meta-cell">
+        <div class="label">Tools</div>
+        <div class="value mono">GHDL · netcat</div>
+      </div>
+    </div>
+
+    <div class="tags">
+      <span class="tag cat">VHDL</span>
+      <span class="tag cat">TPM</span>
+      <span class="tag">Hardcoded Backdoor</span>
+      <span class="tag">Digital Logic</span>
+      <span class="tag">XOR Cipher</span>
+    </div>
+  </div>
+</header>
+
+<main class="content">
+  <div class="wrap">
+
+    <div class="section">
+      <h2 class="sec-title">Overview</h2>
+      <p>
+        The challenge provides a handful of files for a small hardware design: a schematic
+        image and four <code>.vhdl</code> source files. VHDL (VHSIC Hardware Description
+        Language) is a text-based hardware description language used to define the behavior
+        of digital circuits — it isn't an executable in the traditional sense, but source
+        that gets synthesized into actual logic on an FPGA or ASIC. Here, it's provided as
+        pre-written source so we can read the design directly rather than reverse-engineer a
+        binary.
+      </p>
+
+      <div class="figure">
+        <img src="01-file-listing.png" alt="Terminal listing of the challenge files: backdoor.vhdl, encryption.vhdl, key.vhdl, schematic.png, tpm.vhdl">
+        <figcaption><span class="fig-tag">Fig. 1</span>Challenge files after extraction — four VHDL sources plus a schematic image.</figcaption>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 1 — Reading the schematic</h2>
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>
+          <code>schematic.png</code> lays out the high-level data flow for the module. It
+          depicts a <strong>TPM (Trusted Platform Module)</strong> chip — a hardware
+          component used to securely store keys and perform cryptographic operations so
+          that sensitive data can't be recovered through physical tampering with the rest
+          of the board.
+        </p>
+        <p>
+          The diagram shows input data flowing into a <strong>Logic</strong> block, then
+          into a <strong>Crypto</strong> block alongside a <strong>Key</strong>, before both
+          paths converge on a <strong>MUX</strong> (multiplexer) that produces the final
+          output. The multiplexer is the key detail: it means there are at least two
+          possible paths to the output, and something decides which one is taken — that
+          "something" is what we need to find in the VHDL source.
+        </p>
+        <div class="figure">
+          <img src="02-schematic.jpg" alt="Schematic diagram showing TPM chip with Input, Key, Crypto, Logic, and MUX blocks">
+          <figcaption><span class="fig-tag">Fig. 2</span>High-level schematic: Input and Key feed Crypto, Logic feeds back into the MUX that selects the final output.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 2 — Analyzing the sources with GHDL</h2>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>
+          <a href="https://github.com/ghdl/ghdl" target="_blank" rel="noopener">GHDL</a> is
+          an open-source VHDL simulator. Running <code>ghdl -a *.vhdl</code>
+          <strong>analyzes</strong> the source files — it parses and type-checks each
+          entity/architecture pair and compiles them into GHDL's internal work library
+          (the <code>work-obj93.cf</code> file), which is what makes later simulation or
+          elaboration possible.
+          <span class="fix-note">✓ corrected</span>
+        </p>
+        <div class="callout fix">
+          <strong>Note on the analysis step:</strong> this step isn't strictly required to
+          solve the challenge — everything needed is visible by just reading the four
+          <code>.vhdl</code> files directly. It's included here because it's a useful sanity
+          check that the files are syntactically valid VHDL and confirms how the entities
+          relate to each other (as shown in the work-library listing below).
+        </div>
+        <div class="figure">
+          <img src="03-ghdl-analyze.png" alt="Terminal showing ghdl -a *.vhdl being run and the resulting work-obj93.cf file listing entities tpm, ckey, encryption, and backdoor">
+          <figcaption><span class="fig-tag">Fig. 3</span><code>ghdl -a *.vhdl</code> compiles the sources into GHDL's work library, confirming four entities: <code>tpm</code>, <code>ckey</code>, <code>encryption</code>, and <code>backdoor</code>.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 3 — Reading encryption.vhdl</h2>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>
+          <code>encryption.vhdl</code> defines an entity called <code>encryption</code>
+          with two 16-bit inputs, <code>D</code> (data) and <code>K</code> (key), and one
+          16-bit output, <code>E</code>.
+        </p>
+        <pre><code><span class="cmt">-- simplified from encryption.vhdl</span>
+<span class="kw">entity</span> encryption <span class="kw">is</span>
+    Port ( D, K : <span class="kw">in</span>  STD_LOGIC_VECTOR(15 downto 0);
+           E    : <span class="kw">out</span> STD_LOGIC_VECTOR(15 downto 0) );
+<span class="kw">end</span> encryption;
+
+<span class="cmt">-- for i in 1 to 15: E(i) &lt;= D(i) XOR K(i)</span>
+<span class="cmt">-- then overridden:</span>
+<span class="cmt">-- E(0)  &lt;= NOT K(0)</span>
+<span class="cmt">-- E(6)  &lt;= NOT K(6)</span>
+<span class="cmt">-- E(13) &lt;= NOT K(13)</span></code></pre>
+        <p>
+          The core operation loops from bit 1 to bit 15 and XORs each bit of <code>D</code>
+          with the corresponding bit of <code>K</code>. After the loop, three specific bits
+          — 0, 6, and 13 — are overridden and set to the <em>inverse</em> of the
+          corresponding key bit, regardless of what the XOR would have produced. This is
+          the "Crypto" block from the schematic.
+        </p>
+        <div class="figure">
+          <img src="04-encryption-vhdl.png" alt="Source listing of encryption.vhdl showing the XOR loop and the bit overrides for E(0), E(6), E(13)">
+          <figcaption><span class="fig-tag">Fig. 4</span><code>encryption.vhdl</code> — bitwise XOR of D and K, with bits 0, 6, and 13 forced to <code>NOT K</code>.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 4 — Finding the backdoor</h2>
+      <div class="step">
+        <div class="step-num">4</div>
+        <p>
+          <code>backdoor.vhdl</code> is much simpler: one 16-bit input <code>D</code>, and
+          a single-bit output <code>B</code>. It defines a hardcoded constant:
+        </p>
+        <pre><code><span class="kw">constant</span> pattern : STD_LOGIC_VECTOR(15 downto 0) := <span class="str">"1111111111101001"</span>;
+
+<span class="kw">if</span> D = pattern <span class="kw">then</span>
+    B &lt;= <span class="str">'1'</span>;
+<span class="kw">else</span>
+    B &lt;= <span class="str">'0'</span>;
+<span class="kw">end if</span>;</code></pre>
+        <p>
+          If the 16-bit input matches <code>pattern</code> exactly, <code>B</code> is
+          driven high — this is the multiplexer's "select" signal from the schematic. In
+          other words: <strong>if you send exactly this bit pattern, the MUX routes the
+          input straight to the output, completely bypassing the encryption block.</strong>
+          That's the backdoor — a hardcoded master key baked directly into the hardware
+          logic, which is exactly the kind of supply-chain risk a TPM is supposed to
+          protect against.
+        </p>
+        <p>
+          Converting the 16-bit binary pattern <code>1111111111101001</code> to hex gives
+          <code>0xFFE9</code>.
+        </p>
+        <div class="figure">
+          <img src="05-backdoor-vhdl.png" alt="Source listing of backdoor.vhdl showing the hardcoded 16-bit pattern constant and the comparison logic">
+          <figcaption><span class="fig-tag">Fig. 5</span><code>backdoor.vhdl</code> — the hardcoded 16-bit trigger pattern <code>1111111111101001</code> (<code>0xFFE9</code>).</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Step 5 — Triggering it on the live target</h2>
+      <div class="step">
+        <div class="step-num">5</div>
+        <p>
+          With the pattern in hand, connecting to the challenge's exposed service over
+          <code>netcat</code> and submitting the same 16-bit binary string as input
+          triggers the backdoor condition and returns the flag.
+        </p>
+        <div class="figure">
+          <img src="06-flag-capture.png" alt="netcat session sending the 16-bit backdoor pattern and receiving the flag from the challenge service">
+          <figcaption><span class="fig-tag">Fig. 6</span>Sending <code>1111111111101001</code> to the service over netcat triggers the backdoor and returns the flag.</figcaption>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Flag</h2>
+      <div class="flag-box">
+        <span class="flag-label">Flag</span>
+        HTB{4_7yp1c41_53cu23_TPM_ch1p}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="sec-title">Takeaways</h2>
+      <ul class="clean">
+        <li>A <strong>TPM</strong> stands for Trusted Platform Module — a dedicated chip for secure key storage and crypto operations, distinct from the general CPU/PCB logic around it.</li>
+        <li>Hardcoded bypass conditions ("golden patterns," debug backdoors, factory-test hooks) are a realistic class of hardware vulnerability — they're easy to leave in during development and easy to miss in review since they don't show up as a typical software bug.</li>
+        <li>Reading VHDL directly is often faster than trying to simulate it — for small designs like this, the "vulnerability" is legible straight from the source.</li>
+      </ul>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    Writeup by AK — published for portfolio purposes ·
+    <a href="../index.html">More CTF writeups</a> ·
+    <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

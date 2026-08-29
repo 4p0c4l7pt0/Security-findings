@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTF Writeups — Hardware Track | AK Security-findings</title>
+<meta name="description" content="Hardware-track CTF writeups from HackTheBox: VHDL reversing and Gerber/PCB analysis challenges.">
+<link rel="stylesheet" href="../ctf-theme.css">
+<style>
+  .card-grid { display: grid; gap: 18px; margin-top: 8px; }
+  .ctf-card {
+    display: block;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 22px 24px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .ctf-card:hover { border-color: var(--accent-dim); text-decoration: none; transform: translateY(-1px); }
+  .ctf-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .ctf-icon { font-size: 22px; }
+  .ctf-title { font-size: 18px; font-weight: 600; color: var(--text-bright); }
+  .ctf-sub { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+  .ctf-desc { color: var(--text); font-size: 14.5px; margin-bottom: 14px; }
+  .ctf-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">AK<span>/</span>Security-findings</div>
+    <nav class="topnav">
+      <a href="../index.html">Portfolio</a>
+      <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">🚩 CTF Writeups</span>
+    <h1>Hardware Track Writeups</h1>
+    <p class="subtitle">
+      Short writeups from HackTheBox hardware-track challenges — VHDL logic reversing
+      and PCB/Gerber layer analysis.
+    </p>
+  </div>
+</header>
+
+<main class="content">
+  <div class="wrap">
+    <div class="card-grid">
+
+      <a class="ctf-card" href="hardware_its_oops_pm/index.html">
+        <div class="ctf-card-top">
+          <span class="ctf-icon">🔩</span>
+          <span class="ctf-title">Hardware, It's Oops PM</span>
+        </div>
+        <div class="ctf-sub">HackTheBox · Hardware / Reversing · Easy</div>
+        <div class="ctf-desc">
+          Reversing a small VHDL "TPM" design to find a hardcoded 16-bit backdoor
+          pattern that bypasses the encryption block entirely.
+        </div>
+        <div class="ctf-tags">
+          <span class="tag cat">VHDL</span>
+          <span class="tag">TPM</span>
+          <span class="tag">Hardcoded Backdoor</span>
+        </div>
+      </a>
+
+      <a class="ctf-card" href="critical_flight/index.html">
+        <div class="ctf-card-top">
+          <span class="ctf-icon">🛩️</span>
+          <span class="ctf-title">Critical Flight</span>
+        </div>
+        <div class="ctf-sub">HackTheBox · Hardware / PCB · Very Easy</div>
+        <div class="ctf-desc">
+          Recovering a flag split across the bottom-copper and inner layers of a
+          flight-controller PCB from raw Gerber files.
+        </div>
+        <div class="ctf-tags">
+          <span class="tag cat">Gerber / PCB</span>
+          <span class="tag">Silkscreen Steganography</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    AK · Published for portfolio purposes ·
+    <a href="https://github.com/4p0c4l7pt0/Security-findings" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>
